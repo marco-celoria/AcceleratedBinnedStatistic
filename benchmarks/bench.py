@@ -4,9 +4,11 @@
 
 import gc
 import os
+import time
 
 import cupy as cp
 import numpy as np
+import scipy
 from cupyx.distributed import init_process_group
 from cupyx.profiler import benchmark
 
@@ -272,6 +274,17 @@ def bench(comm, x_cpu, values_cpu, n_bins, max_shared_mem=None, n_threads=256):
     t5_gpus_b = bench_v5_dist.gpu_times.mean()
     t6_gpus_b = bench_v6_dist.gpu_times.mean()
     if rank == 0:
+        t_start_cpu = time.time()
+        statistic, _, _ = scipy.stats.binned_statistic(
+            x_cpu, values_cpu, statistic="mean", bins=n_bins
+        )
+        t_end_cpu = time.time()
+        t_cpu = t_end_cpu - t_start_cpu
+        print(
+            f"Size:{n_samples}\tBins:{n_bins}\tTime   CPU      :{t_cpu:.6f} s",
+            flush=True,
+        )
+
         print(
             f"Size:{n_samples}\tBins:{n_bins}\tTime 1 GPU  - v1:{t1_gpu:.6f} s \t[{t1_gpu_b:.6f} s]",
             flush=True,
