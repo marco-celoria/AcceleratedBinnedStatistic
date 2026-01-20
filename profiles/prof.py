@@ -48,16 +48,16 @@ def main():
     dev = cp.cuda.Device(local_rank)
     dev.use()
     comm = init_process_group(world_size, rank, use_mpi=True)
-    n_samples = 41334
+    n_samples = 413340001
     if rank == 0:
         x_cpu = 0.01 * np.sin(np.linspace(0., 5., n_samples)) + np.linspace(0., 10., n_samples)**2 + 1.
         values_cpu = np.linspace(0., 10., n_samples) + 0.01 * np.cos(np.linspace(0., 5., n_samples)) + 2.
     else:
         x_cpu = np.zeros(n_samples)
         values_cpu = np.zeros(n_samples)
-    n_bins = 1533
-    sh_mems = 40000
-    n_threads = 256
+    n_bins = 2999
+    sh_mems = 80000
+    n_threads = 768
     bench(comm,  x_cpu, values_cpu, n_bins, sh_mems, n_threads)
 
 
