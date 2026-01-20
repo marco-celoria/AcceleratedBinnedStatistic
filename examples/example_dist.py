@@ -22,7 +22,13 @@ def main():
     comm = init_process_group(world_size, rank, use_mpi=True)
 
     n_samples = 40000
+    n_bins = 15
     arr_cpu = np.linspace(0.0, 4.0, n_samples)
+
+    x_cpu = 0.01 * np.sin(arr_cpu) + arr_cpu**2 + 1.0
+    v_cpu = 0.01 * np.cos(arr_cpu) + arr_cpu + 2.0
+    statistic_cpu, _, _ = scipy.stats.binned_statistic(x_cpu, v_cpu, bins=n_bins)
+
     arr_gpu = cp.asarray(arr_cpu, dtype=cp.float64)
     local_arr_gpu = acc.scatter(comm, arr_gpu)
 
@@ -30,21 +36,14 @@ def main():
     #        f"Head of local_arr_gpu:{local_arr_gpu[:5]}\n"
     #        f"Tail of local_arr_gpu:{local_arr_gpu[-5:]}", flush=True)
 
-    x_cpu = 0.01 * np.sin(arr_cpu) + arr_cpu**2 + 1.0
-    values_cpu = arr_cpu + 0.01 * np.cos(arr_cpu) + 2.0
-
     local_x_gpu = 0.01 * np.sin(local_arr_gpu) + local_arr_gpu**2 + 1.0
-    local_values_gpu = local_arr_gpu + 0.01 * np.cos(local_arr_gpu) + 2.0
+    local_v_gpu = 0.01 * np.cos(local_arr_gpu) + local_arr_gpu + 2.0
+    statistic_gpu = acc.binned_statistic_dist(comm, local_x_gpu, local_v_gpu, n_bins)
 
-    n_bins = 15
-    statistic_gpu = acc.binned_statistic_dist(
-        comm, local_x_gpu, local_values_gpu, n_bins
-    )
     print(
         f"On rank {rank}) Results from acceleratedbinnedstatistic\n{statistic_gpu}",
         flush=True,
     )
-    statistic_cpu, _, _ = scipy.stats.binned_statistic(x_cpu, values_cpu, bins=n_bins)
     if rank == 0:
         print(f"Results from scipy:\n{statistic_cpu}", flush=True)
     assert np.allclose(statistic_cpu, statistic_gpu.get())
