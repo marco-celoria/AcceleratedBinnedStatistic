@@ -28,13 +28,15 @@ This is a basic example which shows you how to use the function on a single GPU
 ```
 n_samples = 40000
 n_bins = 15
-x_cpu = np.sin(np.linspace(0.0, 4.0, n_samples))
-values_cpu = np.cos(np.linspace(0.0, 4.0, n_samples))
-statistic_cpu, _, _ = scipy.stats.binned_statistic(x_cpu, values_cpu, bins=n_bins)
+arr_cpu = np.linspace(0.0, 4.0, n_samples)
+
+x_cpu = 0.01 * np.sin(arr_cpu) + arr_cpu**2 + 1.0
+v_cpu = 0.01 * np.cos(arr_cpu) + arr_cpu + 2.0
+statistic_cpu, _, _ = scipy.stats.binned_statistic(x_cpu, v_cpu, bins=n_bins)
 
 x_gpu = cp.asarray(x_cpu, dtype=cp.float64)
-values_gpu = cp.asarray(values_cpu, dtype=cp.float64)
-statistic_gpu = acc.binned_statistic(x_gpu, values_gpu, n_bins)
+v_gpu = cp.asarray(v_cpu, dtype=cp.float64)
+statistic_gpu = acc.binned_statistic(x_gpu, v_gpu, n_bins)
 ```
 
 For multi-GPUs
@@ -47,15 +49,15 @@ n_bins = 15
 
 arr_cpu = np.linspace(0.0, 4.0, n_samples)
 x_cpu = 0.01 * np.sin(arr_cpu) + arr_cpu**2 + 1.0
-values_cpu = arr_cpu + 0.01 * np.cos(arr_cpu) + 2.0
-statistic_cpu, _, _ = scipy.stats.binned_statistic(x_cpu, values_cpu, bins=n_bins)
+v_cpu = 0.01 * np.cos(arr_cpu) + arr_cpu + 2.0
+statistic_cpu, _, _ = scipy.stats.binned_statistic(x_cpu, v_cpu, bins=n_bins)
 
 arr_gpu = cp.asarray(arr_cpu, dtype=cp.float64)
 local_arr_gpu = acc.scatter(comm, arr_gpu)
 local_x_gpu = 0.01 * np.sin(local_arr_gpu) + local_arr_gpu**2 + 1.0
-local_values_gpu = local_arr_gpu + 0.01 * np.cos(local_arr_gpu) + 2.0
+local_v_gpu = local_arr_gpu + 0.01 * np.cos(local_arr_gpu) + 2.0
 
-statistic_gpu = acc.binned_statistic_dist(comm, local_x_gpu, local_values_gpu, bins=n_bins)
+statistic_gpu = acc.binned_statistic_dist(comm, local_x_gpu, local_v_gpu, bins=n_bins)
 ```
 
 see the files in `examples` for more details.
