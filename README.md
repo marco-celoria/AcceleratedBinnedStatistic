@@ -66,22 +66,21 @@ see the files in `examples` for more details.
 
 We have considered 6 implementations of the CUDA kernels, depending on the parallelization startegy:
 
-- A) Basic implementation
-- B) Privatization in Global Memory
-- C) Privatization in Shared Memory
-- D) Coarsening with contiguous partitioning
-- E) Coarsening with interleaved partitioning 
-- F) Aggregation
+- v1) Basic implementation
+- v2) Privatization in Global Memory
+- v3) Privatization in Shared Memory
+- v4) Coarsening with contiguous partitioning
+- v5) Coarsening with interleaved partitioning 
+- v6) Aggregation
 
-Preliminary benchmarks on Leonardo booster partition (single socket 32-core Intel Xeon Platinum 8358 CPU, 2.60GHz and 4x NVIDIA custom Ampere A100 GPU 64GB HBM2e per node) suggests that for optimized kernels we have:
+Preliminary benchmarks on Leonardo booster partition (single socket 32-core Intel Xeon Platinum 8358 CPU, 2.60GHz and 4x NVIDIA custom Ampere A100 GPU 64GB HBM2e per node) suggests that for input array of size 413340001 (sample size), we have
 
-```
-Samples     = 413340001
-Bins        = 6999 
-CPU    time = 16.938 s 
-1 GPU  time =  0.285 s
-4 GPUs time =  0.071 s
-```
+| Bins | CPU [s] | v1-1GPU [s] | v2-1GPU [s] | v3-1GPU [s] | v4-1GPU [s] | v5-1GPU [s] | v6-1GPU [s] | v1-4GPUs [s] | v2-4GPUs [s] | v3-4GPUs [s] | v4-4GPUs [s] | v5-4GPUs [s] | v6-4GPUs [s] | threads |
+| -----|---------|-------------|-------------|-------------|-------------|-------------|-------------|--------------|--------------|--------------|--------------|--------------|--------------|---------|
+| 433  | 22.2393 | 1.088988    | 0.052489    | 0.047707    | 0.045374    | 0.047586    | 0.047448    | 0.278728     | 0.051490     | 0.012159     | 0.011569     | 0.012102     | 0.012062     | 128     | 
+| 833  | 15.7343 | 0.907774    | 0.052030    | 0.068222    | 0.063465    | 0.068295    | 0.068371    | 0.233641     | 0.050243     | 0.017291     | 0.016082     | 0.017293     | 0.017306     | 256     |
+| 1533 | 16.0404 | 0.886425    | 0.050479    | 0.096039    | 0.090732    | 0.098262    | 0.096747    | 0.233319     | 0.046970     | 0.024268     | 0.022972     | 0.024813     | 0.024427     | 512     |
+| 2999 | 16.4502 | 0.857417    | 0.059253    | 0.160423    | 0.136270    | 0.161757    | 0.160999    | 0.230651     | 0.059358     | 0.040440     | 0.034340     | 0.040756     | 0.040556     | 768     |
+| 6999 | 16.8233 | 0.795643    | 0.076116    | 0.289973    | 0.240219    | 0.290002    | 0.285196    | 0.220536     | 0.096494     | 0.072972     | 0.060662     | 0.072985     | 0.071776     | 1024    |
 
- 
-
+Note that v2 is very demanding in terms of global memory (`2 * n_bins * n_blocks * 8` bytes for storing intermediate results, where `n_blocks = sample_size / n_threads`) whereas v3, v4, v5, v6 require `2 * 8 * n_bins` bytes of shared memory.
