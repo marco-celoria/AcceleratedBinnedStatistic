@@ -1,10 +1,9 @@
-# SPDX-FileCopyrightText: (C) 2024 Marco Celoria <celoria.marco@gmail.com>
+# SPDX-FileCopyrightText: (C) 2026 Marco Celoria <celoria.marco@gmail.com>
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-import numpy as np
 import cupy as cp
-
+import numpy as np
 
 bin_stat_code = """
 // CUDA kernel that performs parallel binned statistic computation.
@@ -517,16 +516,23 @@ __global__ void binned_statistic_kernel_v5(
 // For many many bins, one may use shared memory tiling
 """
 
-bin_stat_mod = cp.RawModule(code=bin_stat_code, backend='nvrtc', options=('-std=c++17',),
-                            name_expressions=["binned_statistic_kernel_v1",
-                              "binned_statistic_kernel_v2",
-                              "binned_statistic_kernel_v3",
-                              "binned_statistic_kernel_v4",
-                              "binned_statistic_kernel_v5",
-                              "binned_statistic_kernel_v6",
-                              "binned_statistic_mean"])
+bin_stat_mod = cp.RawModule(
+    code=bin_stat_code,
+    backend="nvrtc",
+    options=("-std=c++17",),
+    name_expressions=[
+        "binned_statistic_kernel_v1",
+        "binned_statistic_kernel_v2",
+        "binned_statistic_kernel_v3",
+        "binned_statistic_kernel_v4",
+        "binned_statistic_kernel_v5",
+        "binned_statistic_kernel_v6",
+        "binned_statistic_mean",
+    ],
+)
 
-def binned_statistic_v1(x_gpu, values_gpu, n_bins, n_threads = 256):
+
+def binned_statistic_v1(x_gpu, values_gpu, n_bins, n_threads=256):
     """
     Compute a binned statistic (mean) on the GPU using custom CUDA kernels.
 
@@ -535,8 +541,8 @@ def binned_statistic_v1(x_gpu, values_gpu, n_bins, n_threads = 256):
     x_gpu : cupy.ndarray
         A sequence of values to be binned (on GPU).
     values_gpu : cupy.ndarray
-        The data on which the statistic will be computed (on GPU). 
-        This must be the same shape as x, or a set of sequences - each the same shape as x. 
+        The data on which the statistic will be computed (on GPU).
+        This must be the same shape as x, or a set of sequences - each the same shape as x.
     n_bins : int
         Number of bins.
     n_threads : int, optional
@@ -553,17 +559,32 @@ def binned_statistic_v1(x_gpu, values_gpu, n_bins, n_threads = 256):
     statistic = cp.zeros(n_bins, dtype=cp.float64)
     x_min = cp.min(x_gpu).get().item()
     x_max = cp.max(x_gpu).get().item()
-    bin_width = (x_max - x_min)/n_bins
-    binned_statistic_kernel = bin_stat_mod.get_function('binned_statistic_kernel_v1')
-    binned_statistic_mean   = bin_stat_mod.get_function('binned_statistic_mean')
+    bin_width = (x_max - x_min) / n_bins
+    binned_statistic_kernel = bin_stat_mod.get_function("binned_statistic_kernel_v1")
+    binned_statistic_mean = bin_stat_mod.get_function("binned_statistic_mean")
     n_blocks = (n_samples // n_threads) + 1
-    binned_statistic_kernel((n_blocks,),(n_threads,), (n_samples, n_bins, x_min, bin_width, x_gpu, values_gpu, hist_count, hist_value))
+    binned_statistic_kernel(
+        (n_blocks,),
+        (n_threads,),
+        (
+            n_samples,
+            n_bins,
+            x_min,
+            bin_width,
+            x_gpu,
+            values_gpu,
+            hist_count,
+            hist_value,
+        ),
+    )
     n_blocks_mean = (n_bins // n_threads) + 1
-    binned_statistic_mean((n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic))
+    binned_statistic_mean(
+        (n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic)
+    )
     return statistic
 
 
-def binned_statistic_v2(x_gpu, values_gpu, n_bins, n_threads = 256):
+def binned_statistic_v2(x_gpu, values_gpu, n_bins, n_threads=256):
     """
     Compute a binned statistic (mean) on the GPU using custom CUDA kernels.
 
@@ -572,8 +593,8 @@ def binned_statistic_v2(x_gpu, values_gpu, n_bins, n_threads = 256):
     x_gpu : cupy.ndarray
         A sequence of values to be binned (on GPU).
     values_gpu : cupy.ndarray
-        The data on which the statistic will be computed (on GPU). 
-        This must be the same shape as x, or a set of sequences - each the same shape as x. 
+        The data on which the statistic will be computed (on GPU).
+        This must be the same shape as x, or a set of sequences - each the same shape as x.
     n_bins : int
         Number of bins.
     n_threads : int, optional
@@ -585,22 +606,37 @@ def binned_statistic_v2(x_gpu, values_gpu, n_bins, n_threads = 256):
         Mean value per bin.
     """
     n_samples = len(x_gpu)
-    statistic  = cp.zeros(n_bins, dtype=cp.float64)
+    statistic = cp.zeros(n_bins, dtype=cp.float64)
     x_min = cp.min(x_gpu).get().item()
     x_max = cp.max(x_gpu).get().item()
-    bin_width = (x_max - x_min)/n_bins
-    binned_statistic_kernel = bin_stat_mod.get_function('binned_statistic_kernel_v2')
-    binned_statistic_mean   = bin_stat_mod.get_function('binned_statistic_mean')
+    bin_width = (x_max - x_min) / n_bins
+    binned_statistic_kernel = bin_stat_mod.get_function("binned_statistic_kernel_v2")
+    binned_statistic_mean = bin_stat_mod.get_function("binned_statistic_mean")
     n_blocks = (n_samples // n_threads) + 1
-    hist_value = cp.zeros(n_bins*n_blocks, dtype=cp.float64)
-    hist_count = cp.zeros(n_bins*n_blocks, dtype=cp.int64)
-    binned_statistic_kernel((n_blocks,),(n_threads,), (n_samples, n_bins, x_min, bin_width, x_gpu, values_gpu, hist_count, hist_value))
+    hist_value = cp.zeros(n_bins * n_blocks, dtype=cp.float64)
+    hist_count = cp.zeros(n_bins * n_blocks, dtype=cp.int64)
+    binned_statistic_kernel(
+        (n_blocks,),
+        (n_threads,),
+        (
+            n_samples,
+            n_bins,
+            x_min,
+            bin_width,
+            x_gpu,
+            values_gpu,
+            hist_count,
+            hist_value,
+        ),
+    )
     n_blocks_mean = (n_bins // n_threads) + 1
-    binned_statistic_mean((n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic))
+    binned_statistic_mean(
+        (n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic)
+    )
     return statistic
 
 
-def binned_statistic_v3(x_gpu, values_gpu, n_bins, max_shared_mem = None, n_threads = 256):
+def binned_statistic_v3(x_gpu, values_gpu, n_bins, max_shared_mem=None, n_threads=256):
     """
     Compute a binned statistic (mean) on the GPU using custom CUDA kernels.
 
@@ -609,13 +645,13 @@ def binned_statistic_v3(x_gpu, values_gpu, n_bins, max_shared_mem = None, n_thre
     x_gpu : cupy.ndarray
         A sequence of values to be binned (on GPU).
     values_gpu : cupy.ndarray
-        The data on which the statistic will be computed (on GPU). 
-        This must be the same shape as x, or a set of sequences - each the same shape as x. 
+        The data on which the statistic will be computed (on GPU).
+        This must be the same shape as x, or a set of sequences - each the same shape as x.
     n_bins : int
         Number of bins.
     max_shared_mem: int, optional
-        The maximum size in bytes of dynamic shared memory per block for this function. 
-        Any launch must have a dynamic shared memory size smaller than this value. 
+        The maximum size in bytes of dynamic shared memory per block for this function.
+        Any launch must have a dynamic shared memory size smaller than this value.
     n_threads : int, optional
         Number of CUDA threads per block (default: 256).
 
@@ -627,23 +663,40 @@ def binned_statistic_v3(x_gpu, values_gpu, n_bins, max_shared_mem = None, n_thre
     n_samples = len(x_gpu)
     hist_value = cp.zeros(n_bins, dtype=cp.float64)
     hist_count = cp.zeros(n_bins, dtype=cp.int64)
-    statistic  = cp.zeros(n_bins, dtype=cp.float64)
+    statistic = cp.zeros(n_bins, dtype=cp.float64)
     x_min = cp.min(x_gpu).get().item()
     x_max = cp.max(x_gpu).get().item()
-    bin_width = (x_max - x_min)/n_bins
-    binned_statistic_kernel = bin_stat_mod.get_function('binned_statistic_kernel_v3')
+    bin_width = (x_max - x_min) / n_bins
+    binned_statistic_kernel = bin_stat_mod.get_function("binned_statistic_kernel_v3")
     if max_shared_mem is not None:
         binned_statistic_kernel.max_dynamic_shared_size_bytes = max_shared_mem
     else:
         binned_statistic_kernel.max_dynamic_shared_size_bytes = 2 * 8 * n_bins
-    binned_statistic_mean   = bin_stat_mod.get_function('binned_statistic_mean')
+    binned_statistic_mean = bin_stat_mod.get_function("binned_statistic_mean")
     n_blocks = (n_samples // n_threads) + 1
-    binned_statistic_kernel((n_blocks,),(n_threads,), (n_samples, n_bins, x_min, bin_width, x_gpu, values_gpu, hist_count, hist_value), shared_mem=(2 * 8 * n_bins))
+    binned_statistic_kernel(
+        (n_blocks,),
+        (n_threads,),
+        (
+            n_samples,
+            n_bins,
+            x_min,
+            bin_width,
+            x_gpu,
+            values_gpu,
+            hist_count,
+            hist_value,
+        ),
+        shared_mem=(2 * 8 * n_bins),
+    )
     n_blocks_mean = (n_bins // n_threads) + 1
-    binned_statistic_mean((n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic))
+    binned_statistic_mean(
+        (n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic)
+    )
     return statistic
 
-def binned_statistic_v4(x_gpu, values_gpu, n_bins, max_shared_mem = None, n_threads = 256):
+
+def binned_statistic_v4(x_gpu, values_gpu, n_bins, max_shared_mem=None, n_threads=256):
     """
     Compute a binned statistic (mean) on the GPU using custom CUDA kernels.
 
@@ -652,57 +705,13 @@ def binned_statistic_v4(x_gpu, values_gpu, n_bins, max_shared_mem = None, n_thre
     x_gpu : cupy.ndarray
         A sequence of values to be binned (on GPU).
     values_gpu : cupy.ndarray
-        The data on which the statistic will be computed (on GPU). 
-        This must be the same shape as x, or a set of sequences - each the same shape as x. 
+        The data on which the statistic will be computed (on GPU).
+        This must be the same shape as x, or a set of sequences - each the same shape as x.
     n_bins : int
         Number of bins.
     max_shared_mem: int, optional
-        The maximum size in bytes of dynamic shared memory per block for this function. 
-        Any launch must have a dynamic shared memory size smaller than this value. 
-    n_threads : int, optional
-        Number of CUDA threads per block (default: 256).
-
-    Returns
-    -------
-    statistic : cupy.ndarray
-        Mean value per bin.
-    """
-    n_samples = len(x_gpu)
-    hist_value  = cp.zeros(n_bins, dtype=cp.float64)
-    hist_count = cp.zeros(n_bins, dtype=cp.int64)
-    statistic  = cp.zeros(n_bins, dtype=cp.float64)
-    x_min = cp.min(x_gpu).get().item()
-    x_max = cp.max(x_gpu).get().item()
-    bin_width = (x_max - x_min)/n_bins
-    binned_statistic_kernel = bin_stat_mod.get_function('binned_statistic_kernel_v4')
-    if max_shared_mem is not None:
-        binned_statistic_kernel.max_dynamic_shared_size_bytes = max_shared_mem
-    else:
-        binned_statistic_kernel.max_dynamic_shared_size_bytes = 2 * 8 * n_bins
-    binned_statistic_mean   = bin_stat_mod.get_function('binned_statistic_mean')
-    n_blocks = (n_samples // n_threads) + 1
-    binned_statistic_kernel((n_blocks,),(n_threads,), (n_samples, n_bins, x_min, bin_width, x_gpu, values_gpu, hist_count, hist_value), shared_mem=(2 * 8 * n_bins))
-    n_blocks_mean = (n_bins // n_threads) + 1
-    binned_statistic_mean((n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic))
-    return statistic
-
-
-def binned_statistic_v5(x_gpu, values_gpu, n_bins, max_shared_mem = None, n_threads = 256):
-    """
-    Compute a binned statistic (mean) on the GPU using custom CUDA kernels.
-
-    Parameters
-    ----------
-    x_gpu : cupy.ndarray
-        A sequence of values to be binned (on GPU).
-    values_gpu : cupy.ndarray
-        The data on which the statistic will be computed (on GPU). 
-        This must be the same shape as x, or a set of sequences - each the same shape as x. 
-    n_bins : int
-        Number of bins.
-    max_shared_mem: int, optional
-        The maximum size in bytes of dynamic shared memory per block for this function. 
-        Any launch must have a dynamic shared memory size smaller than this value. 
+        The maximum size in bytes of dynamic shared memory per block for this function.
+        Any launch must have a dynamic shared memory size smaller than this value.
     n_threads : int, optional
         Number of CUDA threads per block (default: 256).
 
@@ -714,24 +723,40 @@ def binned_statistic_v5(x_gpu, values_gpu, n_bins, max_shared_mem = None, n_thre
     n_samples = len(x_gpu)
     hist_value = cp.zeros(n_bins, dtype=cp.float64)
     hist_count = cp.zeros(n_bins, dtype=cp.int64)
-    statistic  = cp.zeros(n_bins, dtype=cp.float64)
+    statistic = cp.zeros(n_bins, dtype=cp.float64)
     x_min = cp.min(x_gpu).get().item()
     x_max = cp.max(x_gpu).get().item()
-    bin_width = (x_max - x_min)/n_bins
-    binned_statistic_kernel = bin_stat_mod.get_function('binned_statistic_kernel_v5')
+    bin_width = (x_max - x_min) / n_bins
+    binned_statistic_kernel = bin_stat_mod.get_function("binned_statistic_kernel_v4")
     if max_shared_mem is not None:
         binned_statistic_kernel.max_dynamic_shared_size_bytes = max_shared_mem
     else:
         binned_statistic_kernel.max_dynamic_shared_size_bytes = 2 * 8 * n_bins
-    binned_statistic_mean   = bin_stat_mod.get_function('binned_statistic_mean')
+    binned_statistic_mean = bin_stat_mod.get_function("binned_statistic_mean")
     n_blocks = (n_samples // n_threads) + 1
-    binned_statistic_kernel((n_blocks,),(n_threads,), (n_samples, n_bins, x_min, bin_width, x_gpu, values_gpu, hist_count, hist_value), shared_mem=(2 * 8 * n_bins))
+    binned_statistic_kernel(
+        (n_blocks,),
+        (n_threads,),
+        (
+            n_samples,
+            n_bins,
+            x_min,
+            bin_width,
+            x_gpu,
+            values_gpu,
+            hist_count,
+            hist_value,
+        ),
+        shared_mem=(2 * 8 * n_bins),
+    )
     n_blocks_mean = (n_bins // n_threads) + 1
-    binned_statistic_mean((n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic))
+    binned_statistic_mean(
+        (n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic)
+    )
     return statistic
 
 
-def binned_statistic_v6(x_gpu, values_gpu, n_bins, max_shared_mem = None, n_threads = 256):
+def binned_statistic_v5(x_gpu, values_gpu, n_bins, max_shared_mem=None, n_threads=256):
     """
     Compute a binned statistic (mean) on the GPU using custom CUDA kernels.
 
@@ -740,13 +765,13 @@ def binned_statistic_v6(x_gpu, values_gpu, n_bins, max_shared_mem = None, n_thre
     x_gpu : cupy.ndarray
         A sequence of values to be binned (on GPU).
     values_gpu : cupy.ndarray
-        The data on which the statistic will be computed (on GPU). 
-        This must be the same shape as x, or a set of sequences - each the same shape as x. 
+        The data on which the statistic will be computed (on GPU).
+        This must be the same shape as x, or a set of sequences - each the same shape as x.
     n_bins : int
         Number of bins.
     max_shared_mem: int, optional
-        The maximum size in bytes of dynamic shared memory per block for this function. 
-        Any launch must have a dynamic shared memory size smaller than this value. 
+        The maximum size in bytes of dynamic shared memory per block for this function.
+        Any launch must have a dynamic shared memory size smaller than this value.
     n_threads : int, optional
         Number of CUDA threads per block (default: 256).
 
@@ -758,20 +783,96 @@ def binned_statistic_v6(x_gpu, values_gpu, n_bins, max_shared_mem = None, n_thre
     n_samples = len(x_gpu)
     hist_value = cp.zeros(n_bins, dtype=cp.float64)
     hist_count = cp.zeros(n_bins, dtype=cp.int64)
-    statistic  = cp.zeros(n_bins, dtype=cp.float64)
+    statistic = cp.zeros(n_bins, dtype=cp.float64)
     x_min = cp.min(x_gpu).get().item()
     x_max = cp.max(x_gpu).get().item()
-    bin_width = (x_max - x_min)/n_bins
-    binned_statistic_kernel = bin_stat_mod.get_function('binned_statistic_kernel_v6')
+    bin_width = (x_max - x_min) / n_bins
+    binned_statistic_kernel = bin_stat_mod.get_function("binned_statistic_kernel_v5")
     if max_shared_mem is not None:
         binned_statistic_kernel.max_dynamic_shared_size_bytes = max_shared_mem
     else:
         binned_statistic_kernel.max_dynamic_shared_size_bytes = 2 * 8 * n_bins
-    binned_statistic_mean   = bin_stat_mod.get_function('binned_statistic_mean')
+    binned_statistic_mean = bin_stat_mod.get_function("binned_statistic_mean")
     n_blocks = (n_samples // n_threads) + 1
-    binned_statistic_kernel((n_blocks,), (n_threads,), (n_samples, n_bins, x_min, bin_width, x_gpu, values_gpu, hist_count, hist_value), shared_mem=(2 * 8 * n_bins))
+    binned_statistic_kernel(
+        (n_blocks,),
+        (n_threads,),
+        (
+            n_samples,
+            n_bins,
+            x_min,
+            bin_width,
+            x_gpu,
+            values_gpu,
+            hist_count,
+            hist_value,
+        ),
+        shared_mem=(2 * 8 * n_bins),
+    )
     n_blocks_mean = (n_bins // n_threads) + 1
-    binned_statistic_mean((n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic))
+    binned_statistic_mean(
+        (n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic)
+    )
+    return statistic
+
+
+def binned_statistic_v6(x_gpu, values_gpu, n_bins, max_shared_mem=None, n_threads=256):
+    """
+    Compute a binned statistic (mean) on the GPU using custom CUDA kernels.
+
+    Parameters
+    ----------
+    x_gpu : cupy.ndarray
+        A sequence of values to be binned (on GPU).
+    values_gpu : cupy.ndarray
+        The data on which the statistic will be computed (on GPU).
+        This must be the same shape as x, or a set of sequences - each the same shape as x.
+    n_bins : int
+        Number of bins.
+    max_shared_mem: int, optional
+        The maximum size in bytes of dynamic shared memory per block for this function.
+        Any launch must have a dynamic shared memory size smaller than this value.
+    n_threads : int, optional
+        Number of CUDA threads per block (default: 256).
+
+    Returns
+    -------
+    statistic : cupy.ndarray
+        Mean value per bin.
+    """
+    n_samples = len(x_gpu)
+    hist_value = cp.zeros(n_bins, dtype=cp.float64)
+    hist_count = cp.zeros(n_bins, dtype=cp.int64)
+    statistic = cp.zeros(n_bins, dtype=cp.float64)
+    x_min = cp.min(x_gpu).get().item()
+    x_max = cp.max(x_gpu).get().item()
+    bin_width = (x_max - x_min) / n_bins
+    binned_statistic_kernel = bin_stat_mod.get_function("binned_statistic_kernel_v6")
+    if max_shared_mem is not None:
+        binned_statistic_kernel.max_dynamic_shared_size_bytes = max_shared_mem
+    else:
+        binned_statistic_kernel.max_dynamic_shared_size_bytes = 2 * 8 * n_bins
+    binned_statistic_mean = bin_stat_mod.get_function("binned_statistic_mean")
+    n_blocks = (n_samples // n_threads) + 1
+    binned_statistic_kernel(
+        (n_blocks,),
+        (n_threads,),
+        (
+            n_samples,
+            n_bins,
+            x_min,
+            bin_width,
+            x_gpu,
+            values_gpu,
+            hist_count,
+            hist_value,
+        ),
+        shared_mem=(2 * 8 * n_bins),
+    )
+    n_blocks_mean = (n_bins // n_threads) + 1
+    binned_statistic_mean(
+        (n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic)
+    )
     return statistic
 
 
@@ -800,7 +901,7 @@ def scatter_v0(comm, array_gpu):
     world_size = comm._comm.size()
     # Define local array
     n = len(array_gpu)
-    loc_n, rem_n  = n // world_size, n % world_size
+    loc_n, rem_n = n // world_size, n % world_size
     loc_ns = np.full(world_size, loc_n, dtype=np.int64)
     loc_ns[:rem_n] += 1
     max_loc_n = np.max(loc_ns)
@@ -812,10 +913,11 @@ def scatter_v0(comm, array_gpu):
     recvbuf = cp.zeros(max_loc_n)
     if rank == 0:
         for i in range(world_size):
-            sendbuf[i,:loc_ns[i]] = array_gpu[cumsum_loc_n[i]:cumsum_loc_n[i+1]]
+            sendbuf[i, : loc_ns[i]] = array_gpu[cumsum_loc_n[i]: cumsum_loc_n[i + 1]]
     comm.scatter(sendbuf, recvbuf, root=0)
-    local_array_gpu[:] = recvbuf[:loc_ns[rank]]
+    local_array_gpu[:] = recvbuf[: loc_ns[rank]]
     return local_array_gpu
+
 
 def scatter_v1(comm, array_gpu):
     """
@@ -853,16 +955,19 @@ def scatter_v1(comm, array_gpu):
     local_array_gpu = cp.zeros(loc_ns[rank], dtype=array_gpu.dtype)
     if rank == 0:
         # Root sends slices directly to each rank
-        local_array_gpu[:] = array_gpu[cumsum_loc_n[0]:cumsum_loc_n[1]]
+        local_array_gpu[:] = array_gpu[cumsum_loc_n[0]: cumsum_loc_n[1]]
         for i in range(1, world_size):
             # Send exact slice (no padding)
-            comm.send(array_gpu[cumsum_loc_n[i]:cumsum_loc_n[i+1]], i)
+            comm.send(array_gpu[cumsum_loc_n[i]: cumsum_loc_n[i + 1]], i)
     else:
         # Non-root ranks receive exactly their slice
         comm.recv(local_array_gpu, 0)
     return local_array_gpu
 
-def binned_statistic_v1_dist(comm, local_x_gpu, local_values_gpu, n_bins, n_threads = 256):
+
+def binned_statistic_v1_dist(
+    comm, local_x_gpu, local_values_gpu, n_bins, n_threads=256
+):
     """
     Compute a binned statistic (mean) on GPUs using custom CUDA kernels for distributed data.
 
@@ -871,8 +976,8 @@ def binned_statistic_v1_dist(comm, local_x_gpu, local_values_gpu, n_bins, n_thre
     local_x_gpu : cupy.ndarray
         A sequence of values to be binned (on GPU).
     local_values_gpu : cupy.ndarray
-        The data on which the statistic will be computed (on GPU). 
-        This must be the same shape as x, or a set of sequences - each the same shape as x. 
+        The data on which the statistic will be computed (on GPU).
+        This must be the same shape as x, or a set of sequences - each the same shape as x.
     n_bins : int
         Number of bins.
     n_threads : int, optional
@@ -883,39 +988,55 @@ def binned_statistic_v1_dist(comm, local_x_gpu, local_values_gpu, n_bins, n_thre
     statistic : cupy.ndarray
         Mean value per bin.
     """
-    # Get communicator info
-    rank = comm._comm.rank_id()
-    world_size = comm._comm.size()
     # Get minimum and maximum accross all the ranks
-    local_x_min = cp.min(local_x_gpu) * cp.ones(2) # This is necessary for nccl cupy otherwise error
-    local_x_max = cp.max(local_x_gpu) * cp.ones(2) # It needs an array, does not work on single number
+    # This is necessary for nccl cupy otherwise error
+    local_x_min = cp.min(local_x_gpu) * cp.ones(2)
+    # It needs an array, does not work on single number
+    local_x_max = cp.max(local_x_gpu) * cp.ones(2)
     x_min = cp.zeros(2)
     x_max = cp.zeros(2)
     comm.all_reduce(local_x_min, x_min, op="min")
     comm.all_reduce(local_x_max, x_max, op="max")
     x_min_v = x_min[0].get().item()
     x_max_v = x_max[0].get().item()
-    bin_width = (x_max_v - x_min_v)/n_bins
+    bin_width = (x_max_v - x_min_v) / n_bins
     # Initialize all required arrays and kernels
     n_samples = len(local_x_gpu)
     hist_value = cp.zeros(n_bins, dtype=cp.float64)
     hist_count = cp.zeros(n_bins, dtype=cp.int64)
     statistic = cp.zeros(n_bins, dtype=cp.float64)
-    binned_statistic_kernel = bin_stat_mod.get_function('binned_statistic_kernel_v1')
-    binned_statistic_mean   = bin_stat_mod.get_function('binned_statistic_mean')
+    binned_statistic_kernel = bin_stat_mod.get_function("binned_statistic_kernel_v1")
+    binned_statistic_mean = bin_stat_mod.get_function("binned_statistic_mean")
     # Call  binned_statistic_kernel
     n_blocks = (n_samples // n_threads) + 1
-    binned_statistic_kernel((n_blocks,), (n_threads,), (n_samples, n_bins, x_min_v, bin_width, local_x_gpu, local_values_gpu, hist_count, hist_value))
+    binned_statistic_kernel(
+        (n_blocks,),
+        (n_threads,),
+        (
+            n_samples,
+            n_bins,
+            x_min_v,
+            bin_width,
+            local_x_gpu,
+            local_values_gpu,
+            hist_count,
+            hist_value,
+        ),
+    )
     # Reduce the histogram with the value and the count summing accross all the ranks
     comm.all_reduce(hist_value, hist_value)
     comm.all_reduce(hist_count, hist_count)
     # Compute the mean per bin
     n_blocks_mean = (n_bins // n_threads) + 1
-    binned_statistic_mean((n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic))
+    binned_statistic_mean(
+        (n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic)
+    )
     return statistic
 
 
-def binned_statistic_v2_dist(comm, local_x_gpu, local_values_gpu, n_bins, n_threads = 256):
+def binned_statistic_v2_dist(
+    comm, local_x_gpu, local_values_gpu, n_bins, n_threads=256
+):
     """
     Compute a binned statistic (mean) on GPUs using custom CUDA kernels for distributed data.
 
@@ -924,8 +1045,8 @@ def binned_statistic_v2_dist(comm, local_x_gpu, local_values_gpu, n_bins, n_thre
     local_x_gpu : cupy.ndarray
         A sequence of values to be binned (on GPU).
     local_values_gpu : cupy.ndarray
-        The data on which the statistic will be computed (on GPU). 
-        This must be the same shape as x, or a set of sequences - each the same shape as x. 
+        The data on which the statistic will be computed (on GPU).
+        This must be the same shape as x, or a set of sequences - each the same shape as x.
     n_bins : int
         Number of bins.
     n_threads : int, optional
@@ -936,38 +1057,54 @@ def binned_statistic_v2_dist(comm, local_x_gpu, local_values_gpu, n_bins, n_thre
     statistic : cupy.ndarray
         Mean value per bin.
     """
-    # Get communicator info
-    rank = comm._comm.rank_id()
-    world_size = comm._comm.size()
     # Get minimum and maximum accross all the ranks
-    local_x_min = cp.min(local_x_gpu) * cp.ones(2) # This is necessary for nccl cupy otherwise error
-    local_x_max = cp.max(local_x_gpu) * cp.ones(2) # It needs an array, does not work on single number
+    # This is necessary for nccl cupy otherwise error
+    local_x_min = cp.min(local_x_gpu) * cp.ones(2)
+    # It needs an array, does not work on single number
+    local_x_max = cp.max(local_x_gpu) * cp.ones(2)
     x_min = cp.zeros(2)
     x_max = cp.zeros(2)
     comm.all_reduce(local_x_min, x_min, op="min")
     comm.all_reduce(local_x_max, x_max, op="max")
     x_min_v = x_min[0].get().item()
     x_max_v = x_max[0].get().item()
-    bin_width = (x_max_v - x_min_v)/n_bins
+    bin_width = (x_max_v - x_min_v) / n_bins
     # Initialize all required arrays and kernels
     n_samples = len(local_x_gpu)
     statistic = cp.zeros(n_bins, dtype=cp.float64)
-    binned_statistic_kernel = bin_stat_mod.get_function('binned_statistic_kernel_v2')
-    binned_statistic_mean   = bin_stat_mod.get_function('binned_statistic_mean')
+    binned_statistic_kernel = bin_stat_mod.get_function("binned_statistic_kernel_v2")
+    binned_statistic_mean = bin_stat_mod.get_function("binned_statistic_mean")
     n_blocks = (n_samples // n_threads) + 1
-    hist_value = cp.zeros(n_bins*n_blocks, dtype=cp.float64)
-    hist_count = cp.zeros(n_bins*n_blocks, dtype=cp.int64)
-    binned_statistic_kernel((n_blocks,), (n_threads,), (n_samples, n_bins, x_min_v, bin_width, local_x_gpu, local_values_gpu, hist_count, hist_value))
+    hist_value = cp.zeros(n_bins * n_blocks, dtype=cp.float64)
+    hist_count = cp.zeros(n_bins * n_blocks, dtype=cp.int64)
+    binned_statistic_kernel(
+        (n_blocks,),
+        (n_threads,),
+        (
+            n_samples,
+            n_bins,
+            x_min_v,
+            bin_width,
+            local_x_gpu,
+            local_values_gpu,
+            hist_count,
+            hist_value,
+        ),
+    )
     # Reduce the histogram with the value and the count summing accross all the ranks
     comm.all_reduce(hist_value, hist_value)
     comm.all_reduce(hist_count, hist_count)
     # Compute the mean per bin
     n_blocks_mean = (n_bins // n_threads) + 1
-    binned_statistic_mean((n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic))
+    binned_statistic_mean(
+        (n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic)
+    )
     return statistic
 
 
-def binned_statistic_v3_dist(comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem = None, n_threads = 256):
+def binned_statistic_v3_dist(
+    comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem=None, n_threads=256
+):
     """
     Compute a binned statistic (mean) on GPUs using custom CUDA kernels for distributed data.
 
@@ -976,13 +1113,13 @@ def binned_statistic_v3_dist(comm, local_x_gpu, local_values_gpu, n_bins, max_sh
     local_x_gpu : cupy.ndarray
         A sequence of values to be binned (on GPU).
     local_values_gpu : cupy.ndarray
-        The data on which the statistic will be computed (on GPU). 
-        This must be the same shape as x, or a set of sequences - each the same shape as x. 
+        The data on which the statistic will be computed (on GPU).
+        This must be the same shape as x, or a set of sequences - each the same shape as x.
     n_bins : int
         Number of bins.
     max_shared_mem: int, optional
-        The maximum size in bytes of dynamic shared memory per block for this function. 
-        Any launch must have a dynamic shared memory size smaller than this value. 
+        The maximum size in bytes of dynamic shared memory per block for this function.
+        Any launch must have a dynamic shared memory size smaller than this value.
     n_threads : int, optional
         Number of CUDA threads per block (default: 256).
 
@@ -991,43 +1128,60 @@ def binned_statistic_v3_dist(comm, local_x_gpu, local_values_gpu, n_bins, max_sh
     statistic : cupy.ndarray
         Mean value per bin.
     """
-    # Get communicator info
-    rank = comm._comm.rank_id()
-    world_size = comm._comm.size()
     # Get minimum and maximum accross all the ranks
-    local_x_min = cp.min(local_x_gpu) * cp.ones(2) # This is necessary for nccl cupy otherwise error
-    local_x_max = cp.max(local_x_gpu) * cp.ones(2) # It needs an array, does not work on single number
+    # This is necessary for nccl cupy otherwise error
+    local_x_min = cp.min(local_x_gpu) * cp.ones(2)
+    # It needs an array, does not work on single number
+    local_x_max = cp.max(local_x_gpu) * cp.ones(2)
     x_min = cp.zeros(2)
     x_max = cp.zeros(2)
     comm.all_reduce(local_x_min, x_min, op="min")
     comm.all_reduce(local_x_max, x_max, op="max")
     x_min_v = x_min[0].get().item()
     x_max_v = x_max[0].get().item()
-    bin_width = (x_max_v - x_min_v)/n_bins
+    bin_width = (x_max_v - x_min_v) / n_bins
     # Initialize all required arrays and kernels
     n_samples = len(local_x_gpu)
     hist_value = cp.zeros(n_bins, dtype=cp.float64)
     hist_count = cp.zeros(n_bins, dtype=cp.int64)
     statistic = cp.zeros(n_bins, dtype=cp.float64)
-    binned_statistic_kernel = bin_stat_mod.get_function('binned_statistic_kernel_v3')
+    binned_statistic_kernel = bin_stat_mod.get_function("binned_statistic_kernel_v3")
     if max_shared_mem is not None:
         binned_statistic_kernel.max_dynamic_shared_size_bytes = max_shared_mem
     else:
         binned_statistic_kernel.max_dynamic_shared_size_bytes = 2 * 8 * n_bins
-    binned_statistic_mean   = bin_stat_mod.get_function('binned_statistic_mean')
+    binned_statistic_mean = bin_stat_mod.get_function("binned_statistic_mean")
     n_blocks = (n_samples // n_threads) + 1
     # The kernels needs shared memory as two array (2) of double (8) each has size the number of bins (n_bins)
-    binned_statistic_kernel((n_blocks,), (n_threads,), (n_samples, n_bins, x_min_v, bin_width, local_x_gpu, local_values_gpu, hist_count, hist_value), shared_mem=(2*8*n_bins))
+    binned_statistic_kernel(
+        (n_blocks,),
+        (n_threads,),
+        (
+            n_samples,
+            n_bins,
+            x_min_v,
+            bin_width,
+            local_x_gpu,
+            local_values_gpu,
+            hist_count,
+            hist_value,
+        ),
+        shared_mem=(2 * 8 * n_bins),
+    )
     # Reduce the histogram with the value and the count summing accross all the ranks
     comm.all_reduce(hist_value, hist_value)
     comm.all_reduce(hist_count, hist_count)
     # Compute the mean per bin
     n_blocks_mean = (n_bins // n_threads) + 1
-    binned_statistic_mean((n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic))
+    binned_statistic_mean(
+        (n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic)
+    )
     return statistic
 
 
-def binned_statistic_v4_dist(comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem = None, n_threads = 256):
+def binned_statistic_v4_dist(
+    comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem=None, n_threads=256
+):
     """
     Compute a binned statistic (mean) on GPUs using custom CUDA kernels for distributed data.
 
@@ -1036,13 +1190,13 @@ def binned_statistic_v4_dist(comm, local_x_gpu, local_values_gpu, n_bins, max_sh
     local_x_gpu : cupy.ndarray
         A sequence of values to be binned (on GPU).
     local_values_gpu : cupy.ndarray
-        The data on which the statistic will be computed (on GPU). 
-        This must be the same shape as x, or a set of sequences - each the same shape as x. 
+        The data on which the statistic will be computed (on GPU).
+        This must be the same shape as x, or a set of sequences - each the same shape as x.
     n_bins : int
         Number of bins.
     max_shared_mem: int, optional
-        The maximum size in bytes of dynamic shared memory per block for this function. 
-        Any launch must have a dynamic shared memory size smaller than this value. 
+        The maximum size in bytes of dynamic shared memory per block for this function.
+        Any launch must have a dynamic shared memory size smaller than this value.
     n_threads : int, optional
         Number of CUDA threads per block (default: 256).
 
@@ -1051,42 +1205,59 @@ def binned_statistic_v4_dist(comm, local_x_gpu, local_values_gpu, n_bins, max_sh
     statistic : cupy.ndarray
         Mean value per bin.
     """
-    # Get communicator info
-    rank = comm._comm.rank_id()
-    world_size = comm._comm.size()
     # Get minimum and maximum accross all the ranks
-    local_x_min = cp.min(local_x_gpu) * cp.ones(2) # This is necessary for nccl cupy otherwise error
-    local_x_max = cp.max(local_x_gpu) * cp.ones(2) # It needs an array, does not work on single number
+    # This is necessary for nccl cupy otherwise error
+    local_x_min = cp.min(local_x_gpu) * cp.ones(2)
+    # It needs an array, does not work on single number
+    local_x_max = cp.max(local_x_gpu) * cp.ones(2)
     x_min = cp.zeros(2)
     x_max = cp.zeros(2)
     comm.all_reduce(local_x_min, x_min, op="min")
     comm.all_reduce(local_x_max, x_max, op="max")
     x_min_v = x_min[0].get().item()
     x_max_v = x_max[0].get().item()
-    bin_width = (x_max_v - x_min_v)/n_bins
+    bin_width = (x_max_v - x_min_v) / n_bins
     # Initialize all required arrays and kernels
     n_samples = len(local_x_gpu)
     hist_value = cp.zeros(n_bins, dtype=cp.float64)
     hist_count = cp.zeros(n_bins, dtype=cp.int64)
     statistic = cp.zeros(n_bins, dtype=cp.float64)
-    binned_statistic_kernel = bin_stat_mod.get_function('binned_statistic_kernel_v4')
+    binned_statistic_kernel = bin_stat_mod.get_function("binned_statistic_kernel_v4")
     if max_shared_mem is not None:
         binned_statistic_kernel.max_dynamic_shared_size_bytes = max_shared_mem
     else:
         binned_statistic_kernel.max_dynamic_shared_size_bytes = 2 * 8 * n_bins
-    binned_statistic_mean   = bin_stat_mod.get_function('binned_statistic_mean')
+    binned_statistic_mean = bin_stat_mod.get_function("binned_statistic_mean")
     n_blocks = (n_samples // n_threads) + 1
-    binned_statistic_kernel((n_blocks,), (n_threads,), (n_samples, n_bins, x_min_v, bin_width, local_x_gpu, local_values_gpu, hist_count, hist_value), shared_mem=(2*8*n_bins))
+    binned_statistic_kernel(
+        (n_blocks,),
+        (n_threads,),
+        (
+            n_samples,
+            n_bins,
+            x_min_v,
+            bin_width,
+            local_x_gpu,
+            local_values_gpu,
+            hist_count,
+            hist_value,
+        ),
+        shared_mem=(2 * 8 * n_bins),
+    )
     # Reduce the histogram with the value and the count summing accross all the ranks
     comm.all_reduce(hist_value, hist_value)
     comm.all_reduce(hist_count, hist_count)
     # Compute the mean per bin
     n_blocks_mean = (n_bins // n_threads) + 1
-    binned_statistic_mean((n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic))
+    binned_statistic_mean(
+        (n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic)
+    )
     return statistic
 
 
-def binned_statistic_v5_dist(comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem = None, n_threads = 256):
+def binned_statistic_v5_dist(
+    comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem=None, n_threads=256
+):
     """
     Compute a binned statistic (mean) on GPUs using custom CUDA kernels for distributed data.
 
@@ -1095,13 +1266,13 @@ def binned_statistic_v5_dist(comm, local_x_gpu, local_values_gpu, n_bins, max_sh
     local_x_gpu : cupy.ndarray
         A sequence of values to be binned (on GPU).
     local_values_gpu : cupy.ndarray
-        The data on which the statistic will be computed (on GPU). 
-        This must be the same shape as x, or a set of sequences - each the same shape as x. 
+        The data on which the statistic will be computed (on GPU).
+        This must be the same shape as x, or a set of sequences - each the same shape as x.
     n_bins : int
         Number of bins.
     max_shared_mem: int, optional
-        The maximum size in bytes of dynamic shared memory per block for this function. 
-        Any launch must have a dynamic shared memory size smaller than this value. 
+        The maximum size in bytes of dynamic shared memory per block for this function.
+        Any launch must have a dynamic shared memory size smaller than this value.
     n_threads : int, optional
         Number of CUDA threads per block (default: 256).
 
@@ -1110,42 +1281,59 @@ def binned_statistic_v5_dist(comm, local_x_gpu, local_values_gpu, n_bins, max_sh
     statistic : cupy.ndarray
         Mean value per bin.
     """
-    # Get communicator info
-    rank = comm._comm.rank_id()
-    world_size = comm._comm.size()
     # Get minimum and maximum accross all the ranks
-    local_x_min = cp.min(local_x_gpu) * cp.ones(2) # This is necessary for nccl cupy otherwise error
-    local_x_max = cp.max(local_x_gpu) * cp.ones(2) # It needs an array, does not work on single number
+    # This is necessary for nccl cupy otherwise error
+    local_x_min = cp.min(local_x_gpu) * cp.ones(2)
+    # It needs an array, does not work on single number
+    local_x_max = cp.max(local_x_gpu) * cp.ones(2)
     x_min = cp.zeros(2)
     x_max = cp.zeros(2)
     comm.all_reduce(local_x_min, x_min, op="min")
     comm.all_reduce(local_x_max, x_max, op="max")
     x_min_v = x_min[0].get().item()
     x_max_v = x_max[0].get().item()
-    bin_width = (x_max_v - x_min_v)/n_bins
+    bin_width = (x_max_v - x_min_v) / n_bins
     # Initialize all required arrays and kernels
     n_samples = len(local_x_gpu)
     hist_value = cp.zeros(n_bins, dtype=cp.float64)
     hist_count = cp.zeros(n_bins, dtype=cp.int64)
     statistic = cp.zeros(n_bins, dtype=cp.float64)
-    binned_statistic_kernel = bin_stat_mod.get_function('binned_statistic_kernel_v5')
+    binned_statistic_kernel = bin_stat_mod.get_function("binned_statistic_kernel_v5")
     if max_shared_mem is not None:
         binned_statistic_kernel.max_dynamic_shared_size_bytes = max_shared_mem
     else:
         binned_statistic_kernel.max_dynamic_shared_size_bytes = 2 * 8 * n_bins
-    binned_statistic_mean   = bin_stat_mod.get_function('binned_statistic_mean')
+    binned_statistic_mean = bin_stat_mod.get_function("binned_statistic_mean")
     n_blocks = (n_samples // n_threads) + 1
-    binned_statistic_kernel((n_blocks,), (n_threads,), (n_samples, n_bins, x_min_v, bin_width, local_x_gpu, local_values_gpu, hist_count, hist_value), shared_mem=(2*8*n_bins))
+    binned_statistic_kernel(
+        (n_blocks,),
+        (n_threads,),
+        (
+            n_samples,
+            n_bins,
+            x_min_v,
+            bin_width,
+            local_x_gpu,
+            local_values_gpu,
+            hist_count,
+            hist_value,
+        ),
+        shared_mem=(2 * 8 * n_bins),
+    )
     # Reduce the histogram with the value and the count summing accross all the ranks
     comm.all_reduce(hist_value, hist_value)
     comm.all_reduce(hist_count, hist_count)
     # Compute the mean per bin
     n_blocks_mean = (n_bins // n_threads) + 1
-    binned_statistic_mean((n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic))
+    binned_statistic_mean(
+        (n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic)
+    )
     return statistic
 
 
-def binned_statistic_v6_dist(comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem = None, n_threads = 256):
+def binned_statistic_v6_dist(
+    comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem=None, n_threads=256
+):
     """
     Compute a binned statistic (mean) on GPUs using custom CUDA kernels for distributed data.
 
@@ -1154,13 +1342,13 @@ def binned_statistic_v6_dist(comm, local_x_gpu, local_values_gpu, n_bins, max_sh
     local_x_gpu : cupy.ndarray
         A sequence of values to be binned (on GPU).
     local_values_gpu : cupy.ndarray
-        The data on which the statistic will be computed (on GPU). 
-        This must be the same shape as x, or a set of sequences - each the same shape as x. 
+        The data on which the statistic will be computed (on GPU).
+        This must be the same shape as x, or a set of sequences - each the same shape as x.
     n_bins : int
         Number of bins.
     max_shared_mem: int, optional
-        The maximum size in bytes of dynamic shared memory per block for this function. 
-        Any launch must have a dynamic shared memory size smaller than this value. 
+        The maximum size in bytes of dynamic shared memory per block for this function.
+        Any launch must have a dynamic shared memory size smaller than this value.
     n_threads : int, optional
         Number of CUDA threads per block (default: 256).
 
@@ -1169,38 +1357,53 @@ def binned_statistic_v6_dist(comm, local_x_gpu, local_values_gpu, n_bins, max_sh
     statistic : cupy.ndarray
         Mean value per bin.
     """
-    # Get communicator info
-    rank = comm._comm.rank_id()
-    world_size = comm._comm.size()
     # Get minimum and maximum accross all the ranks
-    local_x_min = cp.min(local_x_gpu) * cp.ones(2) # This is necessary for nccl cupy otherwise error
-    local_x_max = cp.max(local_x_gpu) * cp.ones(2) # It needs an array, does not work on single number
+    # This is necessary for nccl cupy otherwise error
+    local_x_min = cp.min(local_x_gpu) * cp.ones(2)
+    # It needs an array, does not work on single number
+    local_x_max = cp.max(local_x_gpu) * cp.ones(2)
     x_min = cp.zeros(2)
     x_max = cp.zeros(2)
     comm.all_reduce(local_x_min, x_min, op="min")
     comm.all_reduce(local_x_max, x_max, op="max")
     x_min_v = x_min[0].get().item()
     x_max_v = x_max[0].get().item()
-    bin_width = (x_max_v - x_min_v)/n_bins
+    bin_width = (x_max_v - x_min_v) / n_bins
     # Initialize all required arrays and kernels
     n_samples = len(local_x_gpu)
     hist_value = cp.zeros(n_bins, dtype=cp.float64)
     hist_count = cp.zeros(n_bins, dtype=cp.int64)
     statistic = cp.zeros(n_bins, dtype=cp.float64)
-    binned_statistic_kernel = bin_stat_mod.get_function('binned_statistic_kernel_v6')
+    binned_statistic_kernel = bin_stat_mod.get_function("binned_statistic_kernel_v6")
     if max_shared_mem is not None:
         binned_statistic_kernel.max_dynamic_shared_size_bytes = max_shared_mem
     else:
         binned_statistic_kernel.max_dynamic_shared_size_bytes = 2 * 8 * n_bins
-    binned_statistic_mean   = bin_stat_mod.get_function('binned_statistic_mean')
+    binned_statistic_mean = bin_stat_mod.get_function("binned_statistic_mean")
     n_blocks = (n_samples // n_threads) + 1
-    binned_statistic_kernel((n_blocks,), (n_threads,), (n_samples, n_bins, x_min_v, bin_width, local_x_gpu, local_values_gpu, hist_count, hist_value), shared_mem=(2*8*n_bins))
+    binned_statistic_kernel(
+        (n_blocks,),
+        (n_threads,),
+        (
+            n_samples,
+            n_bins,
+            x_min_v,
+            bin_width,
+            local_x_gpu,
+            local_values_gpu,
+            hist_count,
+            hist_value,
+        ),
+        shared_mem=(2 * 8 * n_bins),
+    )
     # Reduce the histogram with the value and the count summing accross all the ranks
     comm.all_reduce(hist_value, hist_value)
     comm.all_reduce(hist_count, hist_count)
     # Compute the mean per bin
     n_blocks_mean = (n_bins // n_threads) + 1
-    binned_statistic_mean((n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic))
+    binned_statistic_mean(
+        (n_blocks_mean,), (n_threads,), (n_bins, hist_count, hist_value, statistic)
+    )
     return statistic
 
 

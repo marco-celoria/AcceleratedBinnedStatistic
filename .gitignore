@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: (C) 2026 Marco Celoria <celoria.marco@gmail.com>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+**/profiles/reports*
+
+# Virtual environments
+.venv

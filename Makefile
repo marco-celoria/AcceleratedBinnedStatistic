@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: (C) 2026 Marco Celoria <celoria.marco@gmail.com>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 .PHONY: install test lint format
 
 install:
@@ -7,12 +11,11 @@ test:
 	pytest -v --capture=no  tests/
 
 lint:
-	flake8 src tests
-	mypy src tests
-	black --check src tests
-	isort --check-only src tests
+	flake8 src tests benchmarks examples
+	mypy src tests benchmarks examples 
+	isort --check-only src tests benchmarks examples
 
 format:
-	black src tests
-	isort src tests
+	black src tests benchmarks examples
+	isort src tests benchmarks examples
 
