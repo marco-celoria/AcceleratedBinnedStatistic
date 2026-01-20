@@ -13,7 +13,7 @@ from cupyx.distributed import init_process_group
 import acceleratedbinnedstatistic.binned_statistic as acc
 
 
-def _run_all(comm, x_cpu, values_cpu, n_bins, max_shared_mem=None, n_threads=256):
+def _run_all(comm, x_cpu, values_cpu, n_bins, n_threads=256, max_shared_mem=None):
     rank = comm._comm.rank_id()
     if rank == 0:
         x_gpu = cp.asarray(x_cpu, dtype=cp.float64)
@@ -29,16 +29,16 @@ def _run_all(comm, x_cpu, values_cpu, n_bins, max_shared_mem=None, n_threads=256
         statistic_v1 = acc.binned_statistic_v1(x_gpu, values_gpu, n_bins, n_threads)
         statistic_v2 = acc.binned_statistic_v2(x_gpu, values_gpu, n_bins, n_threads)
         statistic_v3 = acc.binned_statistic_v3(
-            x_gpu, values_gpu, n_bins, max_shared_mem, n_threads
+            x_gpu, values_gpu, n_bins, n_threads, max_shared_mem
         )
         statistic_v4 = acc.binned_statistic_v4(
-            x_gpu, values_gpu, n_bins, max_shared_mem, n_threads
+            x_gpu, values_gpu, n_bins, n_threads, max_shared_mem
         )
         statistic_v5 = acc.binned_statistic_v5(
-            x_gpu, values_gpu, n_bins, max_shared_mem, n_threads
+            x_gpu, values_gpu, n_bins, n_threads, max_shared_mem
         )
         statistic_v6 = acc.binned_statistic_v6(
-            x_gpu, values_gpu, n_bins, max_shared_mem, n_threads
+            x_gpu, values_gpu, n_bins, n_threads, max_shared_mem
         )
 
     statistic_v1_dist = acc.binned_statistic_v1_dist(
@@ -48,16 +48,16 @@ def _run_all(comm, x_cpu, values_cpu, n_bins, max_shared_mem=None, n_threads=256
         comm, local_x_gpu, local_values_gpu, n_bins, n_threads
     )
     statistic_v3_dist = acc.binned_statistic_v3_dist(
-        comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem, n_threads
+        comm, local_x_gpu, local_values_gpu, n_bins, n_threads, max_shared_mem
     )
     statistic_v4_dist = acc.binned_statistic_v4_dist(
-        comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem, n_threads
+        comm, local_x_gpu, local_values_gpu, n_bins, n_threads, max_shared_mem
     )
     statistic_v5_dist = acc.binned_statistic_v5_dist(
-        comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem, n_threads
+        comm, local_x_gpu, local_values_gpu, n_bins, n_threads, max_shared_mem
     )
     statistic_v6_dist = acc.binned_statistic_v6_dist(
-        comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem, n_threads
+        comm, local_x_gpu, local_values_gpu, n_bins, n_threads, max_shared_mem
     )
     checks_gpu = cp.zeros(12, dtype=int)
     if rank == 0:
@@ -274,9 +274,8 @@ class TestBinnedStatistics:
             x_cpu = np.zeros(n_samples)
             values_cpu = np.zeros(n_samples)
         n_bins = [15, 64, 633, 2999, 5999]
-        sh_mems = [None, None, None, 96256]
-        for n_bin, sh_mem in zip(n_bins, sh_mems):
-            checks = _run_all(self.comm, x_cpu, values_cpu, n_bin, sh_mem)
+        for n_bin in n_bins:
+            checks = _run_all(self.comm, x_cpu, values_cpu, n_bin)
             _check_errors(errors, checks, n_samples, n_bin)
         assert not errors, "errors occured:\n{}".format("\n".join(errors))
 
@@ -300,11 +299,11 @@ class TestBinnedStatistics:
             x_cpu = np.zeros(n_samples)
             values_cpu = np.zeros(n_samples)
         n_bins = [15, 64, 633, 2999, 5999, 9999]
+        n_threads = [128, 256, 512, 768, 1024]
         sh_mems = [None, None, None, None, None, None]
         # sh_mems = [None, None, None, None, 96256, 163600]
-        n_threads = [128, 256, 512, 768, 1024]
-        for n_bin, sh_mem, n_thread in zip(n_bins, sh_mems, n_threads):
-            checks = _run_all(self.comm, x_cpu, values_cpu, n_bin, sh_mem, n_thread)
+        for n_bin, n_thread, sh_mem in zip(n_bins, n_threads, sh_mems):
+            checks = _run_all(self.comm, x_cpu, values_cpu, n_bin, n_thread, sh_mem)
             _check_errors(errors, checks, n_samples, n_bin)
         assert not errors, "errors occured:\n{}".format("\n".join(errors))
 
@@ -326,10 +325,10 @@ class TestBinnedStatistics:
             x_cpu = np.zeros(n_samples)
             values_cpu = np.zeros(n_samples)
         n_bins = [15, 64, 633, 2999, 5999]
+        n_threads = [128, 256, 512, 768, 1024]
         sh_mems = [None, None, None, None, None]
         # sh_mems = [None, None, None, 126256, 163600]
-        n_threads = [128, 256, 512, 768, 1024]
-        for n_bin, sh_mem, n_thread in zip(n_bins, sh_mems, n_threads):
-            checks = _run_all(self.comm, x_cpu, values_cpu, n_bin, sh_mem, n_thread)
+        for n_bin, n_thread, sh_mem in zip(n_bins, n_threads, sh_mems):
+            checks = _run_all(self.comm, x_cpu, values_cpu, n_bin, n_thread, sh_mem)
             _check_errors(errors, checks, n_samples, n_bin)
         assert not errors, "errors occured:\n{}".format("\n".join(errors))

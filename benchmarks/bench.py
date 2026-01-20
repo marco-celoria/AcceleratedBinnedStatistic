@@ -17,7 +17,7 @@ import acceleratedbinnedstatistic.binned_statistic as acc
 n_iterations = 10
 
 
-def bench(comm, x_cpu, values_cpu, n_bins, max_shared_mem=None, n_threads=256):
+def bench(comm, x_cpu, values_cpu, n_bins, n_threads=256, max_shared_mem=None):
     n_samples = x_cpu.shape[0]
     rank = comm._comm.rank_id()
     world_size = comm._comm.size()
@@ -68,7 +68,7 @@ def bench(comm, x_cpu, values_cpu, n_bins, max_shared_mem=None, n_threads=256):
         start_gpu_3.record()
         for _ in range(n_iterations):
             acc.binned_statistic_v3(
-                x_gpu, values_gpu, n_bins, max_shared_mem, n_threads
+                x_gpu, values_gpu, n_bins, n_threads, max_shared_mem
             )
         cp.cuda.get_current_stream().synchronize()
         end_gpu_3.record()
@@ -81,7 +81,7 @@ def bench(comm, x_cpu, values_cpu, n_bins, max_shared_mem=None, n_threads=256):
         start_gpu_4.record()
         for _ in range(n_iterations):
             acc.binned_statistic_v4(
-                x_gpu, values_gpu, n_bins, max_shared_mem, n_threads
+                x_gpu, values_gpu, n_bins, n_threads, max_shared_mem
             )
         cp.cuda.get_current_stream().synchronize()
         end_gpu_4.record()
@@ -94,7 +94,7 @@ def bench(comm, x_cpu, values_cpu, n_bins, max_shared_mem=None, n_threads=256):
         start_gpu_5.record()
         for _ in range(n_iterations):
             acc.binned_statistic_v5(
-                x_gpu, values_gpu, n_bins, max_shared_mem, n_threads
+                x_gpu, values_gpu, n_bins, n_threads, max_shared_mem
             )
         cp.cuda.get_current_stream().synchronize()
         end_gpu_5.record()
@@ -107,7 +107,7 @@ def bench(comm, x_cpu, values_cpu, n_bins, max_shared_mem=None, n_threads=256):
         start_gpu_6.record()
         for _ in range(n_iterations):
             acc.binned_statistic_v6(
-                x_gpu, values_gpu, n_bins, max_shared_mem, n_threads
+                x_gpu, values_gpu, n_bins, n_threads, max_shared_mem
             )
         cp.cuda.get_current_stream().synchronize()
         end_gpu_6.record()
@@ -128,22 +128,22 @@ def bench(comm, x_cpu, values_cpu, n_bins, max_shared_mem=None, n_threads=256):
         )
         bench_v3 = benchmark(
             acc.binned_statistic_v3,
-            (x_gpu, values_gpu, n_bins, max_shared_mem, n_threads),
+            (x_gpu, values_gpu, n_bins, n_threads, max_shared_mem),
             n_repeat=n_iterations,
         )
         bench_v4 = benchmark(
             acc.binned_statistic_v4,
-            (x_gpu, values_gpu, n_bins, max_shared_mem, n_threads),
+            (x_gpu, values_gpu, n_bins, n_threads, max_shared_mem),
             n_repeat=n_iterations,
         )
         bench_v5 = benchmark(
             acc.binned_statistic_v5,
-            (x_gpu, values_gpu, n_bins, max_shared_mem, n_threads),
+            (x_gpu, values_gpu, n_bins, n_threads, max_shared_mem),
             n_repeat=n_iterations,
         )
         bench_v6 = benchmark(
             acc.binned_statistic_v6,
-            (x_gpu, values_gpu, n_bins, max_shared_mem, n_threads),
+            (x_gpu, values_gpu, n_bins, n_threads, max_shared_mem),
             n_repeat=n_iterations,
         )
         t1_gpu_b = bench_v1.gpu_times.mean()
@@ -184,7 +184,7 @@ def bench(comm, x_cpu, values_cpu, n_bins, max_shared_mem=None, n_threads=256):
     start_gpu_3.record()
     for _ in range(n_iterations):
         acc.binned_statistic_v3_dist(
-            comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem, n_threads
+            comm, local_x_gpu, local_values_gpu, n_bins, n_threads, max_shared_mem
         )
     cp.cuda.get_current_stream().synchronize()
     comm.barrier()
@@ -197,7 +197,7 @@ def bench(comm, x_cpu, values_cpu, n_bins, max_shared_mem=None, n_threads=256):
     start_gpu_4.record()
     for _ in range(n_iterations):
         acc.binned_statistic_v4_dist(
-            comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem, n_threads
+            comm, local_x_gpu, local_values_gpu, n_bins, n_threads, max_shared_mem
         )
     cp.cuda.get_current_stream().synchronize()
     comm.barrier()
@@ -210,7 +210,7 @@ def bench(comm, x_cpu, values_cpu, n_bins, max_shared_mem=None, n_threads=256):
     start_gpu_5.record()
     for _ in range(n_iterations):
         acc.binned_statistic_v5_dist(
-            comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem, n_threads
+            comm, local_x_gpu, local_values_gpu, n_bins, n_threads, max_shared_mem
         )
     cp.cuda.get_current_stream().synchronize()
     comm.barrier()
@@ -223,7 +223,7 @@ def bench(comm, x_cpu, values_cpu, n_bins, max_shared_mem=None, n_threads=256):
     start_gpu_6.record()
     for _ in range(n_iterations):
         acc.binned_statistic_v6_dist(
-            comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem, n_threads
+            comm, local_x_gpu, local_values_gpu, n_bins, n_threads, max_shared_mem
         )
     cp.cuda.get_current_stream().synchronize()
     comm.barrier()
@@ -243,22 +243,22 @@ def bench(comm, x_cpu, values_cpu, n_bins, max_shared_mem=None, n_threads=256):
     )
     bench_v3_dist = benchmark(
         acc.binned_statistic_v3_dist,
-        (comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem, n_threads),
+        (comm, local_x_gpu, local_values_gpu, n_bins, n_threads, max_shared_mem),
         n_repeat=n_iterations,
     )
     bench_v4_dist = benchmark(
         acc.binned_statistic_v4_dist,
-        (comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem, n_threads),
+        (comm, local_x_gpu, local_values_gpu, n_bins, n_threads, max_shared_mem),
         n_repeat=n_iterations,
     )
     bench_v5_dist = benchmark(
         acc.binned_statistic_v5_dist,
-        (comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem, n_threads),
+        (comm, local_x_gpu, local_values_gpu, n_bins, n_threads, max_shared_mem),
         n_repeat=n_iterations,
     )
     bench_v6_dist = benchmark(
         acc.binned_statistic_v6_dist,
-        (comm, local_x_gpu, local_values_gpu, n_bins, max_shared_mem, n_threads),
+        (comm, local_x_gpu, local_values_gpu, n_bins, n_threads, max_shared_mem),
         n_repeat=n_iterations,
     )
     # print(bench1_dist, flush=True)
@@ -366,8 +366,8 @@ def main():
     n_bins = [433, 833, 1533, 2999, 6999]
     sh_mems = [None, None, None, None, None]
     n_threads = [128, 256, 512, 768, 1024]
-    for n_bin, sh_mem, n_thread in zip(n_bins, sh_mems, n_threads):
-        bench(comm, x_cpu, values_cpu, n_bin, sh_mem, n_thread)
+    for n_bin, n_thread, sh_mem in zip(n_bins, n_threads, sh_mems):
+        bench(comm, x_cpu, values_cpu, n_bin, n_thread, sh_mem)
 
 
 if __name__ == "__main__":

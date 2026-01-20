@@ -636,7 +636,7 @@ def binned_statistic_v2(x_gpu, values_gpu, bins, n_threads=256):
     return statistic
 
 
-def binned_statistic_v3(x_gpu, values_gpu, bins, max_shared_mem=None, n_threads=256):
+def binned_statistic_v3(x_gpu, values_gpu, bins, n_threads=256, max_shared_mem=None):
     """
     Compute a binned statistic (mean) on the GPU using custom CUDA kernels.
 
@@ -649,11 +649,11 @@ def binned_statistic_v3(x_gpu, values_gpu, bins, max_shared_mem=None, n_threads=
         This must be the same shape as x, or a set of sequences - each the same shape as x.
     bins : int
         Number of bins.
+    n_threads : int, optional
+        Number of CUDA threads per block (default: 256).
     max_shared_mem: int, optional
         The maximum size in bytes of dynamic shared memory per block for this function.
         Any launch must have a dynamic shared memory size smaller than this value.
-    n_threads : int, optional
-        Number of CUDA threads per block (default: 256).
 
     Returns
     -------
@@ -696,7 +696,7 @@ def binned_statistic_v3(x_gpu, values_gpu, bins, max_shared_mem=None, n_threads=
     return statistic
 
 
-def binned_statistic_v4(x_gpu, values_gpu, bins, max_shared_mem=None, n_threads=256):
+def binned_statistic_v4(x_gpu, values_gpu, bins, n_threads=256, max_shared_mem=None):
     """
     Compute a binned statistic (mean) on the GPU using custom CUDA kernels.
 
@@ -709,11 +709,11 @@ def binned_statistic_v4(x_gpu, values_gpu, bins, max_shared_mem=None, n_threads=
         This must be the same shape as x, or a set of sequences - each the same shape as x.
     bins : int
         Number of bins.
+    n_threads : int, optional
+        Number of CUDA threads per block (default: 256).
     max_shared_mem: int, optional
         The maximum size in bytes of dynamic shared memory per block for this function.
         Any launch must have a dynamic shared memory size smaller than this value.
-    n_threads : int, optional
-        Number of CUDA threads per block (default: 256).
 
     Returns
     -------
@@ -756,7 +756,7 @@ def binned_statistic_v4(x_gpu, values_gpu, bins, max_shared_mem=None, n_threads=
     return statistic
 
 
-def binned_statistic_v5(x_gpu, values_gpu, bins, max_shared_mem=None, n_threads=256):
+def binned_statistic_v5(x_gpu, values_gpu, bins, n_threads=256, max_shared_mem=None):
     """
     Compute a binned statistic (mean) on the GPU using custom CUDA kernels.
 
@@ -769,11 +769,11 @@ def binned_statistic_v5(x_gpu, values_gpu, bins, max_shared_mem=None, n_threads=
         This must be the same shape as x, or a set of sequences - each the same shape as x.
     bins : int
         Number of bins.
+    n_threads : int, optional
+        Number of CUDA threads per block (default: 256).
     max_shared_mem: int, optional
         The maximum size in bytes of dynamic shared memory per block for this function.
         Any launch must have a dynamic shared memory size smaller than this value.
-    n_threads : int, optional
-        Number of CUDA threads per block (default: 256).
 
     Returns
     -------
@@ -816,7 +816,7 @@ def binned_statistic_v5(x_gpu, values_gpu, bins, max_shared_mem=None, n_threads=
     return statistic
 
 
-def binned_statistic_v6(x_gpu, values_gpu, bins, max_shared_mem=None, n_threads=256):
+def binned_statistic_v6(x_gpu, values_gpu, bins, n_threads=256, max_shared_mem=None):
     """
     Compute a binned statistic (mean) on the GPU using custom CUDA kernels.
 
@@ -829,11 +829,11 @@ def binned_statistic_v6(x_gpu, values_gpu, bins, max_shared_mem=None, n_threads=
         This must be the same shape as x, or a set of sequences - each the same shape as x.
     bins : int
         Number of bins.
+    n_threads : int, optional
+        Number of CUDA threads per block (default: 256).
     max_shared_mem: int, optional
         The maximum size in bytes of dynamic shared memory per block for this function.
         Any launch must have a dynamic shared memory size smaller than this value.
-    n_threads : int, optional
-        Number of CUDA threads per block (default: 256).
 
     Returns
     -------
@@ -965,9 +965,7 @@ def scatter_v1(comm, array_gpu):
     return local_array_gpu
 
 
-def binned_statistic_v1_dist(
-    comm, local_x_gpu, local_values_gpu, bins, n_threads=256
-):
+def binned_statistic_v1_dist(comm, local_x_gpu, local_values_gpu, bins, n_threads=256):
     """
     Compute a binned statistic (mean) on GPUs using custom CUDA kernels for distributed data.
 
@@ -1034,9 +1032,7 @@ def binned_statistic_v1_dist(
     return statistic
 
 
-def binned_statistic_v2_dist(
-    comm, local_x_gpu, local_values_gpu, bins, n_threads=256
-):
+def binned_statistic_v2_dist(comm, local_x_gpu, local_values_gpu, bins, n_threads=256):
     """
     Compute a binned statistic (mean) on GPUs using custom CUDA kernels for distributed data.
 
@@ -1103,7 +1099,7 @@ def binned_statistic_v2_dist(
 
 
 def binned_statistic_v3_dist(
-    comm, local_x_gpu, local_values_gpu, bins, max_shared_mem=None, n_threads=256
+    comm, local_x_gpu, local_values_gpu, bins, n_threads=256, max_shared_mem=None
 ):
     """
     Compute a binned statistic (mean) on GPUs using custom CUDA kernels for distributed data.
@@ -1117,11 +1113,11 @@ def binned_statistic_v3_dist(
         This must be the same shape as x, or a set of sequences - each the same shape as x.
     bins : int
         Number of bins.
+    n_threads : int, optional
+        Number of CUDA threads per block (default: 256).
     max_shared_mem: int, optional
         The maximum size in bytes of dynamic shared memory per block for this function.
         Any launch must have a dynamic shared memory size smaller than this value.
-    n_threads : int, optional
-        Number of CUDA threads per block (default: 256).
 
     Returns
     -------
@@ -1180,7 +1176,7 @@ def binned_statistic_v3_dist(
 
 
 def binned_statistic_v4_dist(
-    comm, local_x_gpu, local_values_gpu, bins, max_shared_mem=None, n_threads=256
+    comm, local_x_gpu, local_values_gpu, bins, n_threads=256, max_shared_mem=None
 ):
     """
     Compute a binned statistic (mean) on GPUs using custom CUDA kernels for distributed data.
@@ -1194,11 +1190,11 @@ def binned_statistic_v4_dist(
         This must be the same shape as x, or a set of sequences - each the same shape as x.
     bins : int
         Number of bins.
+    n_threads : int, optional
+        Number of CUDA threads per block (default: 256).
     max_shared_mem: int, optional
         The maximum size in bytes of dynamic shared memory per block for this function.
         Any launch must have a dynamic shared memory size smaller than this value.
-    n_threads : int, optional
-        Number of CUDA threads per block (default: 256).
 
     Returns
     -------
@@ -1256,7 +1252,7 @@ def binned_statistic_v4_dist(
 
 
 def binned_statistic_v5_dist(
-    comm, local_x_gpu, local_values_gpu, bins, max_shared_mem=None, n_threads=256
+    comm, local_x_gpu, local_values_gpu, bins, n_threads=256, max_shared_mem=None
 ):
     """
     Compute a binned statistic (mean) on GPUs using custom CUDA kernels for distributed data.
@@ -1270,11 +1266,11 @@ def binned_statistic_v5_dist(
         This must be the same shape as x, or a set of sequences - each the same shape as x.
     bins : int
         Number of bins.
+    n_threads : int, optional
+        Number of CUDA threads per block (default: 256).
     max_shared_mem: int, optional
         The maximum size in bytes of dynamic shared memory per block for this function.
         Any launch must have a dynamic shared memory size smaller than this value.
-    n_threads : int, optional
-        Number of CUDA threads per block (default: 256).
 
     Returns
     -------
@@ -1332,7 +1328,7 @@ def binned_statistic_v5_dist(
 
 
 def binned_statistic_v6_dist(
-    comm, local_x_gpu, local_values_gpu, bins, max_shared_mem=None, n_threads=256
+    comm, local_x_gpu, local_values_gpu, bins, n_threads=256, max_shared_mem=None
 ):
     """
     Compute a binned statistic (mean) on GPUs using custom CUDA kernels for distributed data.
@@ -1346,11 +1342,11 @@ def binned_statistic_v6_dist(
         This must be the same shape as x, or a set of sequences - each the same shape as x.
     bins : int
         Number of bins.
+    n_threads : int, optional
+        Number of CUDA threads per block (default: 256).
     max_shared_mem: int, optional
         The maximum size in bytes of dynamic shared memory per block for this function.
         Any launch must have a dynamic shared memory size smaller than this value.
-    n_threads : int, optional
-        Number of CUDA threads per block (default: 256).
 
     Returns
     -------
