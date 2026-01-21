@@ -876,7 +876,7 @@ def binned_statistic_v6(x_gpu, values_gpu, bins, n_threads=256, max_shared_mem=N
     return statistic
 
 
-def scatter_v0(comm, array_gpu):
+def scatter_v0(comm, array_gpu, root=0):
     """
     Scatter a 1D GPU array across all ranks of a communicator.
 
@@ -890,6 +890,8 @@ def scatter_v0(comm, array_gpu):
         Distributed communicator object (MPI-like).
     array_gpu : cupy.ndarray
         Input array on the GPU (only significant on rank 0).
+    root : int
+        Rank that will send the in_array to other ranks.
 
     Returns
     -------
@@ -911,15 +913,15 @@ def scatter_v0(comm, array_gpu):
     # Define communication buffers
     sendbuf = cp.zeros((world_size, max_loc_n))
     recvbuf = cp.zeros(max_loc_n)
-    if rank == 0:
+    if rank == root:
         for i in range(world_size):
             sendbuf[i, : loc_ns[i]] = array_gpu[cumsum_loc_n[i]: cumsum_loc_n[i + 1]]
-    comm.scatter(sendbuf, recvbuf, root=0)
+    comm.scatter(sendbuf, recvbuf, root=root)
     local_array_gpu[:] = recvbuf[: loc_ns[rank]]
     return local_array_gpu
 
 
-def scatter_v1(comm, array_gpu):
+def scatter_v1(comm, array_gpu, root=0):
     """
     Scatter a 1D GPU array across all ranks of a communicator.
 
@@ -933,6 +935,8 @@ def scatter_v1(comm, array_gpu):
         Distributed communicator object (MPI-like).
     array_gpu : cupy.ndarray
         Input array on the GPU (only significant on rank 0).
+    root : int
+        Rank that will send the in_array to other ranks.
 
     Returns
     -------
@@ -953,15 +957,16 @@ def scatter_v1(comm, array_gpu):
     np.cumsum(loc_ns, out=cumsum_loc_n[1:], dtype=np.int64)
     # Allocate local array (exact size)
     local_array_gpu = cp.zeros(loc_ns[rank], dtype=array_gpu.dtype)
-    if rank == 0:
+    if rank == root:
         # Root sends slices directly to each rank
-        local_array_gpu[:] = array_gpu[cumsum_loc_n[0]: cumsum_loc_n[1]]
-        for i in range(1, world_size):
+        local_array_gpu[:] = array_gpu[cumsum_loc_n[root]: cumsum_loc_n[root+1]]
+        for i in range(world_size):
             # Send exact slice (no padding)
-            comm.send(array_gpu[cumsum_loc_n[i]: cumsum_loc_n[i + 1]], i)
+            if i != root:
+                comm.send(array_gpu[cumsum_loc_n[i]: cumsum_loc_n[i + 1]], i)
     else:
         # Non-root ranks receive exactly their slice
-        comm.recv(local_array_gpu, 0)
+        comm.recv(local_array_gpu, root)
     return local_array_gpu
 
 

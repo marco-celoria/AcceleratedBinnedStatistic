@@ -12,6 +12,7 @@ import acceleratedbinnedstatistic.binned_statistic as acc
 
 class TestBinnedStatistics:
     world_size = int(str(os.environ.get("WORLD_SIZE", os.environ.get("SLURM_NTASKS"))))
+    assert world_size == 4
     rank = int(str(os.environ.get("RANK", os.environ.get("SLURM_PROCID"))))
     local_rank = int(str(os.environ.get("LOCAL_RANK", os.environ.get("SLURM_LOCALID"))))
     dev = cp.cuda.Device(local_rank)
@@ -50,19 +51,19 @@ class TestBinnedStatistics:
 
     def test_scatter_xs(self):
         n_samples = 1000
-        if self.rank == 0:
+        if self.rank == 1:
             x_gpu = cp.random.normal(0.0, 5.0, n_samples) + cp.linspace(
                 0.0, 5.0, n_samples
             )
         else:
             x_gpu = cp.zeros(n_samples)
-        local_x_gpu_0 = acc.scatter_v0(self.comm, x_gpu)
-        local_x_gpu_1 = acc.scatter_v1(self.comm, x_gpu)
+        local_x_gpu_0 = acc.scatter_v0(self.comm, x_gpu, 1)
+        local_x_gpu_1 = acc.scatter_v1(self.comm, x_gpu, 1)
         assert cp.allclose(local_x_gpu_0, local_x_gpu_1)
 
     def test_scatter_s(self):
         n_samples = 13333
-        if self.rank == 0:
+        if self.rank == 2:
             x_gpu = (
                 cp.random.normal(0, 5, n_samples)
                 + cp.linspace(0.0, 5.0, n_samples)
@@ -70,13 +71,13 @@ class TestBinnedStatistics:
             )
         else:
             x_gpu = cp.zeros(n_samples)
-        local_x_gpu_0 = acc.scatter_v0(self.comm, x_gpu)
-        local_x_gpu_1 = acc.scatter_v1(self.comm, x_gpu)
+        local_x_gpu_0 = acc.scatter_v0(self.comm, x_gpu, 2)
+        local_x_gpu_1 = acc.scatter_v1(self.comm, x_gpu, 2)
         assert cp.allclose(local_x_gpu_0, local_x_gpu_1)
 
     def test_scatter_m(self):
         n_samples = 33339
-        if self.rank == 0:
+        if self.rank == 3:
             x_gpu = (
                 cp.random.normal(0.0, 5.0, n_samples)
                 + cp.linspace(0.0, 1.0, n_samples)
@@ -85,8 +86,8 @@ class TestBinnedStatistics:
             )
         else:
             x_gpu = cp.zeros(n_samples)
-        local_x_gpu_0 = acc.scatter_v0(self.comm, x_gpu)
-        local_x_gpu_1 = acc.scatter_v1(self.comm, x_gpu)
+        local_x_gpu_0 = acc.scatter_v0(self.comm, x_gpu, 3)
+        local_x_gpu_1 = acc.scatter_v1(self.comm, x_gpu, 3)
         assert cp.allclose(local_x_gpu_0, local_x_gpu_1)
 
     def test_scatter_l(self):
@@ -100,13 +101,13 @@ class TestBinnedStatistics:
             )
         else:
             x_gpu = cp.zeros(n_samples)
-        local_x_gpu_0 = acc.scatter_v0(self.comm, x_gpu)
-        local_x_gpu_1 = acc.scatter_v1(self.comm, x_gpu)
+        local_x_gpu_0 = acc.scatter_v0(self.comm, x_gpu, 0)
+        local_x_gpu_1 = acc.scatter_v1(self.comm, x_gpu, 0)
         assert cp.allclose(local_x_gpu_0, local_x_gpu_1)
 
     def test_scatter_xl(self):
         n_samples = 363340001
-        if self.rank == 0:
+        if self.rank == 1:
             x_gpu = (
                 cp.random.normal(0.0, 5.0, n_samples)
                 + cp.linspace(0.0, 1.0, n_samples)
@@ -115,8 +116,8 @@ class TestBinnedStatistics:
             )
         else:
             x_gpu = cp.zeros(n_samples)
-        local_x_gpu_0 = acc.scatter_v0(self.comm, x_gpu)
-        local_x_gpu_1 = acc.scatter_v1(self.comm, x_gpu)
+        local_x_gpu_0 = acc.scatter_v0(self.comm, x_gpu, 1)
+        local_x_gpu_1 = acc.scatter_v1(self.comm, x_gpu, 1)
         assert cp.allclose(local_x_gpu_0, local_x_gpu_1)
 
     def test_scatter_xxl(self):
