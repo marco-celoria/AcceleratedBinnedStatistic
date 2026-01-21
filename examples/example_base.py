@@ -21,7 +21,10 @@ def main():
     x_gpu = cp.asarray(x_cpu, dtype=cp.float64)
     v_gpu = cp.asarray(v_cpu, dtype=cp.float64)
     statistic_gpu = acc.binned_statistic(x_gpu, v_gpu, n_bins)
-
+    
+    # To call a specific version among the possible CUDA kernel implementations
+    statistic_gpu_v2 = acc.binned_statistic_v2(x_gpu, v_gpu, n_bins)
+    assert cp.allclose(statistic_gpu, statistic_gpu_v2)
     print(f"Results from scipy:\n{statistic_cpu}", flush=True)
     print(f"Results from acceleratedbinnedstatistic\n{statistic_gpu}", flush=True)
     assert np.allclose(statistic_cpu, statistic_gpu.get())
