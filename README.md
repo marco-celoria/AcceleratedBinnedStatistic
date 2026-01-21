@@ -16,10 +16,29 @@ While having less options than the `scipy.stats.binned_statistic`, the Accelerat
 
 # Installation
 
-You can install the current version from GitHub and follow the following scripts
+The code has been tested on Leonardo at Cineca with the following software stack
+- CUDA 12.1 
+- GCC 12.2.0 
+- Python 3.11.6
+- OpenMPI 4.1.6
 
-- `submit_install.sh` (using pip)
+Specifically on Leonardo by loading the following modules
+
+```
+module load cuda/12.1
+module load gcc/12.2.0-binut2.41
+module load openmpi/4.1.6--gcc--12.2.0
+module load python/3.11.6--gcc--8.5.0
+```
+
+the other dependencies can be installed using `pip` or `uv` and are described in `requirements.txt` or `pyproject.toml`.  
+
+As an example, on Leonardo you can install the current version from GitHub using one of the scripts below:
+
+- `submit_install.sh`    (using pip)
 - `submit_install_uv.sh` (using uv)
+
+For other systems, you can follow a similar strategy.
 
 # Examples
 
@@ -30,34 +49,51 @@ n_samples = 40000
 n_bins = 15
 arr_cpu = np.linspace(0.0, 4.0, n_samples)
 
+# With scipy we do as usual
 x_cpu = 0.01 * np.sin(arr_cpu) + arr_cpu**2 + 1.0
 v_cpu = 0.01 * np.cos(arr_cpu) + arr_cpu + 2.0
 statistic_cpu, _, _ = scipy.stats.binned_statistic(x_cpu, v_cpu, bins=n_bins)
 
+# To use the accelerated function, first move data on device with CuPy
 x_gpu = cp.asarray(x_cpu, dtype=cp.float64)
 v_gpu = cp.asarray(v_cpu, dtype=cp.float64)
+# Then call the accelerated function
 statistic_gpu = acc.binned_statistic(x_gpu, v_gpu, n_bins)
+
+# To call a specific version among the possible CUDA kernel implementations
+statistic_gpu_v2 = acc.binned_statistic_v2(x_gpu, v_gpu, n_bins)
 ```
 
 For multi-GPUs
 
 ```
+# Set up the NCCLBackend communications
+# ...
 comm = init_process_group(world_size, rank, use_mpi=True)
 
 n_samples = 40000
 n_bins = 15
-
-arr_cpu = np.linspace(0.0, 4.0, n_samples)
-x_cpu = 0.01 * np.sin(arr_cpu) + arr_cpu**2 + 1.0
-v_cpu = 0.01 * np.cos(arr_cpu) + arr_cpu + 2.0
-statistic_cpu, _, _ = scipy.stats.binned_statistic(x_cpu, v_cpu, bins=n_bins)
-
+# Suppose only rank 0 initializes the arrays 
+if rank == 0:
+    arr_cpu = np.linspace(0.0, 4.0, n_samples)
+    x_cpu = 0.01 * np.sin(arr_cpu) + arr_cpu**2 + 1.0
+    v_cpu = 0.01 * np.cos(arr_cpu) + arr_cpu + 2.0
+    statistic_cpu, _, _ = scipy.stats.binned_statistic(x_cpu, v_cpu, bins=n_bins)
+else: # While the others ranks just allocate memory 
+    arr_cpu = np.zeros(n_samples)
+# First we need to move data on device    
 arr_gpu = cp.asarray(arr_cpu, dtype=cp.float64)
+# as we want to scatter the data from rank 0 to all the other ranks
+# and acc.scatter works using NCCL requiring data to be already on GPUs
 local_arr_gpu = acc.scatter(comm, arr_gpu)
-local_x_gpu = 0.01 * np.sin(local_arr_gpu) + local_arr_gpu**2 + 1.0
-local_v_gpu = local_arr_gpu + 0.01 * np.cos(local_arr_gpu) + 2.0
 
-statistic_gpu = acc.binned_statistic_dist(comm, local_x_gpu, local_v_gpu, bins=n_bins)
+# Once we have the local shards, we can compute the accelerated binned_statistic 
+local_x_gpu = 0.01 * np.sin(local_arr_gpu) + local_arr_gpu**2 + 1.0
+local_v_gpu = 0.01 * np.cos(local_arr_gpu) + local_arr_gpu + 2.0
+statistic_gpu = acc.binned_statistic_dist(comm, local_x_gpu, local_v_gpu, n_bins)
+
+# To call a specific version among the possible CUDA kernel implementations
+statistic_gpu_v2 = acc.binned_statistic_v2_dist(comm, local_x_gpu, local_v_gpu, n_bins)
 ```
 
 see the files in `examples` for more details.

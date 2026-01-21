@@ -16,8 +16,6 @@ export PYTHONPATH=/leonardo_work/cin_staff/mcelori1/AcceleratedBinnedStatistic/s
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
 module purge
 module load cuda/12.1
-module load nccl/2.19.1-1--gcc--12.2.0-cuda-12.1
-module load cudnn/8.9.7.29-12--gcc--12.2.0-cuda-12.1
 module load gcc/12.2.0-binut2.41
 module load openmpi/4.1.6--gcc--12.2.0
 module load python/3.11.6--gcc--8.5.0

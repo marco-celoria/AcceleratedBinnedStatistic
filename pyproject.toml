@@ -20,7 +20,7 @@ dependencies = [
     "iniconfig==2.3.0",
     "isort>=7.0.0",
     "mpi4py==4.1.0",
-    "numpy==2.4.0",
+    "numpy==2.4.1",
     "packaging==25.0",
     "pluggy==1.6.0",
     "pygments==2.19.2",

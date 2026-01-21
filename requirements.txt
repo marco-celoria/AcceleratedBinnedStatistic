@@ -15,7 +15,7 @@ mccabe==0.7.0
 mpi4py==4.1.0
 mypy==1.19.1
 mypy_extensions==1.1.0
-numpy==2.4.0
+numpy==2.4.1
 numpy-typing-compat==20251206.2.4
 optype==0.15.0
 packaging==25.0
