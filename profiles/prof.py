@@ -23,29 +23,47 @@ def bench(comm, x_cpu, values_cpu, n_bins, n_threads=256, max_shared_mem=None):
     local_x_gpu = acc.scatter(comm, x_gpu)
     local_values_gpu = acc.scatter(comm, values_gpu)
     cp.cuda.get_current_stream().synchronize()
+    comm.barrier()
+    cp.cuda.nvtx.RangePush(message="binned_statistic_v1_dist")
     statistic_v1_dist = acc.binned_statistic_v1_dist(
         comm, local_x_gpu, local_values_gpu, n_bins, n_threads
     )
+    cp.cuda.nvtx.RangePop()
     cp.cuda.get_current_stream().synchronize()
+    comm.barrier()
+    cp.cuda.nvtx.RangePush(message="binned_statistic_v2_dist")
     statistic_v2_dist = acc.binned_statistic_v2_dist(
         comm, local_x_gpu, local_values_gpu, n_bins, n_threads
     )
+    cp.cuda.nvtx.RangePop()
     cp.cuda.get_current_stream().synchronize()
+    comm.barrier()
+    cp.cuda.nvtx.RangePush(message="binned_statistic_v3_dist")
     statistic_v3_dist = acc.binned_statistic_v3_dist(
         comm, local_x_gpu, local_values_gpu, n_bins, n_threads, max_shared_mem
     )
+    cp.cuda.nvtx.RangePop()
     cp.cuda.get_current_stream().synchronize()
+    comm.barrier()
+    cp.cuda.nvtx.RangePush(message="binned_statistic_v4_dist")
     statistic_v4_dist = acc.binned_statistic_v4_dist(
         comm, local_x_gpu, local_values_gpu, n_bins, n_threads, max_shared_mem
     )
+    cp.cuda.nvtx.RangePop()
     cp.cuda.get_current_stream().synchronize()
+    comm.barrier()
+    cp.cuda.nvtx.RangePush(message="binned_statistic_v5_dist")
     statistic_v5_dist = acc.binned_statistic_v5_dist(
         comm, local_x_gpu, local_values_gpu, n_bins, n_threads, max_shared_mem
     )
+    cp.cuda.nvtx.RangePop()
     cp.cuda.get_current_stream().synchronize()
+    comm.barrier()
+    cp.cuda.nvtx.RangePush(message="binned_statistic_v6_dist")
     statistic_v6_dist = acc.binned_statistic_v6_dist(
         comm, local_x_gpu, local_values_gpu, n_bins, n_threads, max_shared_mem
     )
+    cp.cuda.nvtx.RangePop()
     cp.cuda.get_current_stream().synchronize()
     cp.get_default_memory_pool().free_all_blocks()
     gc.collect()
