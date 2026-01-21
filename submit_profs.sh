@@ -11,7 +11,7 @@
 #SBATCH --gres=gpu:4
 #SBATCH --qos=boost_qos_dbg
 
-export PYTHONPATH=/leonardo_work/cin_staff/mcelori1/AcceleratedBinnedStatistic/src/
+export PYTHONPATH="${PWD}/src/"
 
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
 module purge
