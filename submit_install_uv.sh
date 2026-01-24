@@ -13,7 +13,7 @@ export UV_LINK_MODE=copy
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
 module purge
 module load uv
-module load cuda/12.1
+module load cuda/12.6
 module load gcc/12.2.0-binut2.41  
 module load openmpi/4.1.6--gcc--12.2.0 
 module load python/3.11.6--gcc--8.5.0

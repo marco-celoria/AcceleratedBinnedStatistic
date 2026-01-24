@@ -11,6 +11,8 @@ wheels/
 *.egg-info
 
 **/profiles/reports*
-
+*.sif
+*.err
+*.out
 # Virtual environments
 .venv
