@@ -268,7 +268,10 @@ Stage: devel
     mkdir -p /app
 
 %files
-    . /app
+    README.md /app/README.md
+    uv.lock /app/uv.lock
+    pyproject.toml /app/pyproject.toml
+    src /app/src
 
 %post
     cd /app

@@ -195,7 +195,10 @@ RUN sh /uv-installer.sh && rm /uv-installer.sh
 ENV PATH="/root/.local/bin/:$PATH"
 
 WORKDIR /app
-COPY . .
+COPY README.md /app/README.md
+COPY uv.lock /app/uv.lock
+COPY pyproject.toml /app/pyproject.toml
+COPY src /app/src
 
 RUN uv venv --no-managed-python .venv
 # Enable venv
