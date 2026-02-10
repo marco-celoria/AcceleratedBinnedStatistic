@@ -10,6 +10,8 @@
 #SBATCH --error=%x_%j.err
 
 cd ..
+BASE_DIR=$(pwd)
+
 export UV_LINK_MODE=copy
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
 module purge
@@ -22,8 +24,8 @@ module load python/3.11.6--gcc--8.5.0
 uv venv --no-managed-python .venv
 source .venv/bin/activate
 uv sync
-python -m cupyx.tools.install_library --cuda 12.x --library cutensor --prefix "${SLURM_SUBMIT_DIR}/.venv/.cupy/cuda_lib"
-python -m cupyx.tools.install_library --cuda 12.x --library nccl     --prefix "${SLURM_SUBMIT_DIR}/.venv/.cupy/cuda_lib"
-python -m cupyx.tools.install_library --cuda 12.x --library cudnn    --prefix "${SLURM_SUBMIT_DIR}/.venv/.cupy/cuda_lib"
+python -m cupyx.tools.install_library --cuda 12.x --library cutensor --prefix "${BASE_DIR}/.venv/.cupy/cuda_lib"
+python -m cupyx.tools.install_library --cuda 12.x --library nccl     --prefix "${BASE_DIR}/.venv/.cupy/cuda_lib"
+python -m cupyx.tools.install_library --cuda 12.x --library cudnn    --prefix "${BASE_DIR}/.venv/.cupy/cuda_lib"
 
 make install
