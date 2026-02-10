@@ -9,6 +9,8 @@
 #SBATCH --output=%x_%j.out
 #SBATCH --error=%x_%j.err
 
+cd ..
+
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
 module purge
 module load cuda/12.6

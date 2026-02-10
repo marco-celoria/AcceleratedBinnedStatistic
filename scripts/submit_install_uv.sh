@@ -9,6 +9,7 @@
 #SBATCH --output=%x_%j.out
 #SBATCH --error=%x_%j.err
 
+cd ..
 export UV_LINK_MODE=copy
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
 module purge

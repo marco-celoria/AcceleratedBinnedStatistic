@@ -11,8 +11,9 @@
 #SBATCH --gres=gpu:4
 #SBATCH --qos=boost_qos_dbg
 
-export PYTHONPATH="src/"
+cd ..
 
+export PYTHONPATH="src/"
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
 module purge
 module load cuda/12.6
