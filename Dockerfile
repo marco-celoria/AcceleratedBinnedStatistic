@@ -196,9 +196,11 @@ ENV PATH="/root/.local/bin/:$PATH"
 
 WORKDIR /app
 COPY README.md /app/README.md
+COPY LICENSES /app/LICENSES
 COPY uv.lock /app/uv.lock
 COPY pyproject.toml /app/pyproject.toml
 COPY src /app/src
+
 
 RUN uv venv --no-managed-python .venv
 # Enable venv

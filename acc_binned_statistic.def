@@ -272,6 +272,7 @@ Stage: devel
     uv.lock /app/uv.lock
     pyproject.toml /app/pyproject.toml
     src /app/src
+    LICENSES /app/LICENSES
 
 %post
     cd /app
